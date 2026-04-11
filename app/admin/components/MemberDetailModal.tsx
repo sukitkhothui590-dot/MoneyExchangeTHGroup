@@ -14,7 +14,7 @@ interface MemberDetailModalProps {
   member: Member | null;
   onClose: () => void;
   onUpdate: (updated: Member) => void;
-  onToggleStatus: (member: Member) => void;
+  onToggleStatus: (member: Member) => void | Promise<void>;
 }
 
 export default function MemberDetailModal({

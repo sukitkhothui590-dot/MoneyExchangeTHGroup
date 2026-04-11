@@ -105,15 +105,17 @@ export default function MembersPage() {
     }
   };
 
-  const handleToggleStatus = async (member: MockMember) => {
-    const newStatus = member.status === "active" ? "suspended" : "active";
-    const updated = { ...member, status: newStatus as Member["status"] };
+  const handleToggleStatus = async (member: Member) => {
+    const row = members.find((m) => m.id === member.id);
+    if (!row) return;
+    const newStatus = row.status === "active" ? "suspended" : "active";
+    const updated = { ...row, status: newStatus as Member["status"] };
     const prev = [...members];
     const next = members.map((m) =>
-      m.id === member.id ? normalizeMockMember(updated) : m,
+      m.id === row.id ? normalizeMockMember(updated) : m,
     );
     setMembers(next);
-    setSelectedMember(next.find((x) => x.id === member.id) ?? null);
+    setSelectedMember(next.find((x) => x.id === row.id) ?? null);
 
     if (USE_MOCK_DATA) {
       persistMembers(next);
@@ -121,7 +123,7 @@ export default function MembersPage() {
     }
 
     try {
-      const res = await fetch(`/api/members/${member.id}`, {
+      const res = await fetch(`/api/members/${row.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
