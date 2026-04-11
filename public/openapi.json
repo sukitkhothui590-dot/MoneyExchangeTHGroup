@@ -1,0 +1,1736 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MoneyExchangeTHGroup Admin API",
+    "description": "RESTful API for the MoneyExchangeTHGroup Admin Panel. Manages currencies, exchange rates, members, bookings, wallet top-ups, articles, and admin profiles.\n\nAll endpoints (except `GET /api/currencies` and `GET /api/articles?public=true`) require authentication via Supabase session cookies.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Nexmind IT"
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Current host"
+    }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "Authentication (login / logout)" },
+    { "name": "Currencies", "description": "Currency management and CRUD" },
+    { "name": "Exchange Rates", "description": "Live exchange rates from freecurrencyapi.com with 1-hour cache" },
+    { "name": "Branches", "description": "Branch management and per-branch margin overrides" },
+    { "name": "Articles", "description": "Article / blog post management" },
+    { "name": "Members", "description": "Member management" },
+    { "name": "Bookings", "description": "Currency exchange booking management" },
+    { "name": "Top-ups", "description": "Wallet top-up request management" },
+    { "name": "Profile", "description": "Admin profile management" },
+    { "name": "Dashboard", "description": "Dashboard statistics" }
+  ],
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login",
+        "description": "Authenticate with email and password. Sets Supabase session cookies on success.",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "admin@moneyexchangethgroup.com" },
+                  "password": { "type": "string", "format": "password", "example": "••••••••" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": { "type": "object", "description": "Supabase user object" },
+                        "session": { "type": "object", "description": "Supabase session object" }
+                      }
+                    },
+                    "message": { "type": "string", "example": "Login successful" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout",
+        "description": "Sign out and clear session cookies.",
+        "operationId": "logout",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Logout successful" }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/currencies": {
+      "get": {
+        "tags": ["Currencies"],
+        "summary": "List all currencies",
+        "description": "Returns all currencies sorted by code. **Public endpoint** — no authentication required.",
+        "operationId": "listCurrencies",
+        "responses": {
+          "200": {
+            "description": "Currency list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Currency" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "post": {
+        "tags": ["Currencies"],
+        "summary": "Add new currency",
+        "description": "Create a new currency entry. Requires authentication.",
+        "operationId": "createCurrency",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["code", "name"],
+                "properties": {
+                  "code": { "type": "string", "example": "USD", "description": "ISO 4217 currency code" },
+                  "name": { "type": "string", "example": "US Dollar" },
+                  "flag": { "type": "string", "example": "🇺🇸" },
+                  "buy_rate": { "type": "number", "example": 34.25 },
+                  "sell_rate": { "type": "number", "example": 35.10 },
+                  "buy_margin_percent": { "type": "number", "example": 1.5 },
+                  "sell_margin_percent": { "type": "number", "example": 1.5 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Currency created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Currency" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/currencies/{code}": {
+      "get": {
+        "tags": ["Currencies"],
+        "summary": "Get single currency",
+        "description": "Retrieve a currency by its ISO code.",
+        "operationId": "getCurrency",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "USD"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Currency details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Currency" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "patch": {
+        "tags": ["Currencies"],
+        "summary": "Update currency",
+        "description": "Partial update of a currency. Accepts both snake_case and camelCase field names.",
+        "operationId": "updateCurrency",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "USD"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "flag": { "type": "string" },
+                  "buy_rate": { "type": "number" },
+                  "sell_rate": { "type": "number" },
+                  "buy_margin_percent": { "type": "number" },
+                  "sell_margin_percent": { "type": "number" },
+                  "last_updated": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Currency updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Currency" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "delete": {
+        "tags": ["Currencies"],
+        "summary": "Delete currency",
+        "description": "Remove a currency by its ISO code.",
+        "operationId": "deleteCurrency",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "USD"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Currency deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Currency deleted" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/exchange-rates": {
+      "get": {
+        "tags": ["Exchange Rates"],
+        "summary": "Get live exchange rates",
+        "description": "Fetches exchange rates from freecurrencyapi.com with THB as base currency. Rates are cached for 1 hour in the `exchange_rate_cache` table. On fresh fetch, automatically updates `buy_rate` and `sell_rate` for all currencies in the database using their margin percentages.",
+        "operationId": "getExchangeRates",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Exchange rates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "base": { "type": "string", "example": "THB" },
+                        "rates": {
+                          "type": "object",
+                          "description": "Currency code → rate mapping (units per 1 THB)",
+                          "additionalProperties": { "type": "number" },
+                          "example": { "USD": 0.0283, "EUR": 0.0262, "GBP": 0.0224, "JPY": 4.21 }
+                        },
+                        "fetched_at": { "type": "string", "format": "date-time" },
+                        "source": {
+                          "type": "string",
+                          "enum": ["cache", "api"],
+                          "description": "`cache` if served from DB cache, `api` if freshly fetched"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" },
+          "502": {
+            "description": "External API error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/branches": {
+      "get": {
+        "tags": ["Branches"],
+        "summary": "List all branches",
+        "description": "Returns all branches sorted by name. **Public endpoint** — no authentication required.",
+        "operationId": "listBranches",
+        "responses": {
+          "200": {
+            "description": "Branch list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Branch" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "post": {
+        "tags": ["Branches"],
+        "summary": "Create new branch",
+        "description": "Create a new branch entry. Requires authentication.",
+        "operationId": "createBranch",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id", "name", "name_th"],
+                "properties": {
+                  "id": { "type": "string", "example": "silom", "description": "Unique branch identifier (slug)" },
+                  "name": { "type": "string", "example": "Silom" },
+                  "name_th": { "type": "string", "example": "สีลม" },
+                  "address": { "type": "string" },
+                  "hours": { "type": "string", "example": "09:00 – 20:00" },
+                  "status": { "type": "string", "enum": ["active", "inactive"], "default": "active" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Branch created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Branch" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/branches/{id}": {
+      "get": {
+        "tags": ["Branches"],
+        "summary": "Get single branch",
+        "operationId": "getBranch",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "silom" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Branch details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Branch" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "patch": {
+        "tags": ["Branches"],
+        "summary": "Update branch",
+        "operationId": "updateBranch",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "silom" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "name_th": { "type": "string" },
+                  "address": { "type": "string" },
+                  "hours": { "type": "string" },
+                  "status": { "type": "string", "enum": ["active", "inactive"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Branch updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Branch" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "delete": {
+        "tags": ["Branches"],
+        "summary": "Delete branch",
+        "description": "Remove a branch. Also deletes all branch-specific margin overrides.",
+        "operationId": "deleteBranch",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "silom" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Branch deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Branch deleted" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/branches/{id}/margins": {
+      "get": {
+        "tags": ["Branches"],
+        "summary": "Get branch margin overrides",
+        "description": "Returns all currencies with their effective margins for this branch. Each entry indicates whether the margin is a branch-specific override or the global default.",
+        "operationId": "getBranchMargins",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "silom" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Branch margins",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "branch": { "$ref": "#/components/schemas/Branch" },
+                        "margins": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/BranchMarginEntry" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "put": {
+        "tags": ["Branches"],
+        "summary": "Set all branch margin overrides",
+        "description": "Bulk upsert margin overrides for a branch. All currencies in the array will be set/updated.",
+        "operationId": "setBranchMargins",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "silom" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["margins"],
+                "properties": {
+                  "margins": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["currency_code", "buy_margin_percent", "sell_margin_percent"],
+                      "properties": {
+                        "currency_code": { "type": "string", "example": "USD" },
+                        "buy_margin_percent": { "type": "number", "example": 2.0 },
+                        "sell_margin_percent": { "type": "number", "example": 2.5 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Margins updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/BranchCurrencyMargin" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "patch": {
+        "tags": ["Branches"],
+        "summary": "Update single currency margin for branch",
+        "description": "Upsert a margin override for a single currency at this branch.",
+        "operationId": "updateBranchMargin",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "silom" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["currency_code"],
+                "properties": {
+                  "currency_code": { "type": "string", "example": "USD" },
+                  "buy_margin_percent": { "type": "number", "example": 1.8 },
+                  "sell_margin_percent": { "type": "number", "example": 2.2 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Margin updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/BranchCurrencyMargin" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/articles": {
+      "get": {
+        "tags": ["Articles"],
+        "summary": "List articles",
+        "description": "Returns all articles, optionally filtered by status. Use `?public=true` for public-facing (published only, no auth required).",
+        "operationId": "listArticles",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["draft", "published"] },
+            "description": "Filter by article status"
+          },
+          {
+            "name": "public",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["true"] },
+            "description": "When `true`, returns only published articles (no auth required)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Article list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Article" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "post": {
+        "tags": ["Articles"],
+        "summary": "Create article",
+        "description": "Create a new article. The `author_id` is set automatically from the authenticated user.",
+        "operationId": "createArticle",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "slug"],
+                "properties": {
+                  "title": { "type": "string", "example": "Exchange Rate Tips", "description": "Title in Thai (default)" },
+                  "slug": { "type": "string", "example": "exchange-rate-tips" },
+                  "excerpt": { "type": "string", "description": "Excerpt in Thai" },
+                  "content": { "type": "string", "description": "HTML content body in Thai" },
+                  "thumbnail": { "type": "string", "format": "uri" },
+                  "status": { "type": "string", "enum": ["draft", "published"], "default": "draft" },
+                  "meta_title": { "type": "string", "description": "SEO meta title in Thai" },
+                  "meta_description": { "type": "string", "description": "SEO meta description in Thai" },
+                  "image_alt_text": { "type": "string", "description": "Image alt text in Thai" },
+                  "focus_keyword": { "type": "string" },
+                  "title_en": { "type": "string", "description": "Title in English" },
+                  "excerpt_en": { "type": "string", "description": "Excerpt in English" },
+                  "content_en": { "type": "string", "description": "Content in English" },
+                  "meta_title_en": { "type": "string", "description": "SEO meta title in English" },
+                  "meta_description_en": { "type": "string", "description": "SEO meta description in English" },
+                  "image_alt_text_en": { "type": "string", "description": "Image alt text in English" },
+                  "title_cn": { "type": "string", "description": "Title in Chinese" },
+                  "excerpt_cn": { "type": "string", "description": "Excerpt in Chinese" },
+                  "content_cn": { "type": "string", "description": "Content in Chinese" },
+                  "meta_title_cn": { "type": "string", "description": "SEO meta title in Chinese" },
+                  "meta_description_cn": { "type": "string", "description": "SEO meta description in Chinese" },
+                  "image_alt_text_cn": { "type": "string", "description": "Image alt text in Chinese" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Article created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Article" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/articles/{id}": {
+      "get": {
+        "tags": ["Articles"],
+        "summary": "Get single article",
+        "operationId": "getArticle",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Article details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Article" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "patch": {
+        "tags": ["Articles"],
+        "summary": "Update article",
+        "description": "Partial update of an article. Accepts both snake_case and camelCase field names. Supports i18n fields with _en and _cn suffixes.",
+        "operationId": "updateArticle",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string", "description": "Title in Thai" },
+                  "slug": { "type": "string" },
+                  "excerpt": { "type": "string", "description": "Excerpt in Thai" },
+                  "content": { "type": "string", "description": "Content in Thai" },
+                  "thumbnail": { "type": "string", "format": "uri" },
+                  "status": { "type": "string", "enum": ["draft", "published"] },
+                  "meta_title": { "type": "string", "description": "SEO meta title in Thai" },
+                  "meta_description": { "type": "string", "description": "SEO meta description in Thai" },
+                  "image_alt_text": { "type": "string", "description": "Image alt text in Thai" },
+                  "focus_keyword": { "type": "string" },
+                  "title_en": { "type": "string", "description": "Title in English" },
+                  "excerpt_en": { "type": "string", "description": "Excerpt in English" },
+                  "content_en": { "type": "string", "description": "Content in English" },
+                  "meta_title_en": { "type": "string", "description": "SEO meta title in English" },
+                  "meta_description_en": { "type": "string", "description": "SEO meta description in English" },
+                  "image_alt_text_en": { "type": "string", "description": "Image alt text in English" },
+                  "title_cn": { "type": "string", "description": "Title in Chinese" },
+                  "excerpt_cn": { "type": "string", "description": "Excerpt in Chinese" },
+                  "content_cn": { "type": "string", "description": "Content in Chinese" },
+                  "meta_title_cn": { "type": "string", "description": "SEO meta title in Chinese" },
+                  "meta_description_cn": { "type": "string", "description": "SEO meta description in Chinese" },
+                  "image_alt_text_cn": { "type": "string", "description": "Image alt text in Chinese" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Article updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Article" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "delete": {
+        "tags": ["Articles"],
+        "summary": "Delete article",
+        "operationId": "deleteArticle",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Article deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Article deleted" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/articles/upload": {
+      "post": {
+        "tags": ["Articles"],
+        "summary": "Upload article image",
+        "description": "Upload an image file to the `article-images` Supabase storage bucket. Allowed types: JPEG, PNG, GIF, WebP, SVG. Max size: 5 MB.",
+        "operationId": "uploadArticleImage",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Image file (JPEG, PNG, GIF, WebP, SVG — max 5 MB)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Image uploaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "url": { "type": "string", "format": "uri", "description": "Public URL of the uploaded image" },
+                        "path": { "type": "string", "description": "Storage path (e.g. `articles/1234567890-abc.png`)" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/members": {
+      "get": {
+        "tags": ["Members"],
+        "summary": "List all members",
+        "operationId": "listMembers",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["active", "suspended", "banned"] },
+            "description": "Filter by member status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Member" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "post": {
+        "tags": ["Members"],
+        "summary": "Create new member",
+        "operationId": "createMember",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email"],
+                "properties": {
+                  "name": { "type": "string", "example": "John Doe" },
+                  "email": { "type": "string", "format": "email", "example": "john@example.com" },
+                  "phone": { "type": "string", "example": "+66812345678" },
+                  "status": { "type": "string", "enum": ["active", "suspended", "banned"], "default": "active" },
+                  "wallet_balance": { "type": "number", "default": 0 },
+                  "verified": { "type": "boolean", "default": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Member created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Member" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/members/{id}": {
+      "get": {
+        "tags": ["Members"],
+        "summary": "Get single member",
+        "operationId": "getMember",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Member" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "patch": {
+        "tags": ["Members"],
+        "summary": "Update member",
+        "description": "Partial update of a member. Accepts both snake_case and camelCase field names.",
+        "operationId": "updateMember",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "phone": { "type": "string" },
+                  "status": { "type": "string", "enum": ["active", "suspended", "banned"] },
+                  "wallet_balance": { "type": "number" },
+                  "verified": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Member" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/bookings": {
+      "get": {
+        "tags": ["Bookings"],
+        "summary": "List all bookings",
+        "operationId": "listBookings",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["pending_payment", "pending_review", "approved", "completed"] },
+            "description": "Filter by booking status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Booking list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Booking" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "post": {
+        "tags": ["Bookings"],
+        "summary": "Create new booking",
+        "operationId": "createBooking",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["member_id", "member_name", "currency_code", "amount", "rate", "total_thb"],
+                "properties": {
+                  "member_id": { "type": "string", "format": "uuid" },
+                  "member_name": { "type": "string" },
+                  "currency_code": { "type": "string", "example": "USD" },
+                  "currency_flag": { "type": "string" },
+                  "amount": { "type": "number", "example": 500 },
+                  "rate": { "type": "number", "example": 34.50 },
+                  "total_thb": { "type": "number", "example": 17250 },
+                  "pickup_method": { "type": "string", "enum": ["branch", "wallet"], "default": "branch" },
+                  "branch_name": { "type": "string", "nullable": true },
+                  "pickup_date": { "type": "string", "format": "date-time", "nullable": true },
+                  "status": { "type": "string", "enum": ["pending_payment", "pending_review", "approved", "completed"], "default": "pending_payment" },
+                  "slip_url": { "type": "string", "format": "uri" },
+                  "note": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Booking created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Booking" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/bookings/{id}": {
+      "get": {
+        "tags": ["Bookings"],
+        "summary": "Get single booking",
+        "operationId": "getBooking",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Booking details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Booking" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "patch": {
+        "tags": ["Bookings"],
+        "summary": "Update booking",
+        "description": "Update booking fields — typically used for status transitions and adding notes.",
+        "operationId": "updateBooking",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "string", "enum": ["pending_payment", "pending_review", "approved", "completed"] },
+                  "note": { "type": "string" },
+                  "slip_url": { "type": "string", "format": "uri" },
+                  "branch_name": { "type": "string" },
+                  "pickup_date": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Booking" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/topups": {
+      "get": {
+        "tags": ["Top-ups"],
+        "summary": "List all top-up requests",
+        "operationId": "listTopups",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+            "description": "Filter by top-up status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top-up request list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TopupRequest" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "post": {
+        "tags": ["Top-ups"],
+        "summary": "Create top-up request",
+        "operationId": "createTopup",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["member_id", "member_name", "amount", "transfer_date"],
+                "properties": {
+                  "member_id": { "type": "string", "format": "uuid" },
+                  "member_name": { "type": "string" },
+                  "amount": { "type": "number", "example": 5000 },
+                  "transfer_date": { "type": "string", "format": "date-time" },
+                  "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "default": "pending" },
+                  "slip_url": { "type": "string", "format": "uri" },
+                  "note": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Top-up request created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/TopupRequest" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/topups/{id}": {
+      "get": {
+        "tags": ["Top-ups"],
+        "summary": "Get single top-up request",
+        "operationId": "getTopup",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top-up details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/TopupRequest" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "patch": {
+        "tags": ["Top-ups"],
+        "summary": "Update top-up request (approve / reject)",
+        "description": "When status is changed to `approved`, the member's wallet balance is automatically increased by the top-up amount.",
+        "operationId": "updateTopup",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+                  "note": { "type": "string" },
+                  "slip_url": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Top-up request updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/TopupRequest" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Get current admin profile",
+        "description": "Returns the profile of the currently authenticated admin user.",
+        "operationId": "getProfile",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Profile data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Profile" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "patch": {
+        "tags": ["Profile"],
+        "summary": "Update admin profile",
+        "description": "Partial update of the authenticated admin's profile.",
+        "operationId": "updateProfile",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "example": "Admin User" },
+                  "email": { "type": "string", "format": "email" },
+                  "phone": { "type": "string" },
+                  "avatar_url": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Profile" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/dashboard/stats": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get dashboard statistics",
+        "description": "Returns aggregate counts (currencies, articles, members, bookings, pending bookings, pending top-ups), top 5 currencies, 5 most recent bookings, and 5 most recent top-up requests.",
+        "operationId": "getDashboardStats",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Dashboard statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "stats": {
+                          "type": "object",
+                          "properties": {
+                            "currencies": { "type": "integer", "example": 12 },
+                            "articles": { "type": "integer", "example": 8 },
+                            "members": { "type": "integer", "example": 150 },
+                            "bookings": { "type": "integer", "example": 320 },
+                            "pendingBookings": { "type": "integer", "example": 5 },
+                            "pendingTopups": { "type": "integer", "example": 3 }
+                          }
+                        },
+                        "topCurrencies": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Currency" },
+                          "description": "Top 5 currencies by code"
+                        },
+                        "recentBookings": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Booking" },
+                          "description": "5 most recent bookings"
+                        },
+                        "recentTopups": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/TopupRequest" },
+                          "description": "5 most recent top-up requests"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sb-access-token",
+        "description": "Supabase session cookie set after login. Automatically managed by the browser."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "example": "Something went wrong" }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "Admin User" },
+          "email": { "type": "string", "format": "email", "example": "admin@moneyexchangethgroup.com" },
+          "avatar_url": { "type": "string", "format": "uri", "nullable": true },
+          "phone": { "type": "string", "nullable": true },
+          "role": { "type": "string", "enum": ["admin"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Currency": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "code": { "type": "string", "example": "USD" },
+          "name": { "type": "string", "example": "US Dollar" },
+          "flag": { "type": "string", "example": "🇺🇸" },
+          "buy_rate": { "type": "number", "example": 34.25 },
+          "sell_rate": { "type": "number", "example": 35.10 },
+          "buy_margin_percent": { "type": "number", "example": 1.5 },
+          "sell_margin_percent": { "type": "number", "example": 1.5 },
+          "last_updated": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Branch": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "silom" },
+          "name": { "type": "string", "example": "Silom" },
+          "name_th": { "type": "string", "example": "สีลม" },
+          "address": { "type": "string" },
+          "hours": { "type": "string", "example": "09:00 – 20:00" },
+          "status": { "type": "string", "enum": ["active", "inactive"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BranchCurrencyMargin": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "branch_id": { "type": "string", "example": "silom" },
+          "currency_code": { "type": "string", "example": "USD" },
+          "buy_margin_percent": { "type": "number", "example": 2.0 },
+          "sell_margin_percent": { "type": "number", "example": 2.5 },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BranchMarginEntry": {
+        "type": "object",
+        "description": "Merged view of a currency's margin for a specific branch, showing both the effective margin and global defaults.",
+        "properties": {
+          "currency_code": { "type": "string", "example": "USD" },
+          "currency_name": { "type": "string", "example": "US Dollar" },
+          "currency_flag": { "type": "string", "example": "🇺🇸" },
+          "buy_margin_percent": { "type": "number", "example": 2.0, "description": "Effective buy margin (branch override or global)" },
+          "sell_margin_percent": { "type": "number", "example": 2.5, "description": "Effective sell margin (branch override or global)" },
+          "is_override": { "type": "boolean", "description": "true if this branch has a custom margin for this currency" },
+          "global_buy_margin": { "type": "number", "example": 1.5, "description": "Global default buy margin from currencies table" },
+          "global_sell_margin": { "type": "number", "example": 1.5, "description": "Global default sell margin from currencies table" }
+        }
+      },
+      "Article": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string", "example": "เคล็ดลับอัตราแลกเปลี่ยน", "description": "Title in Thai (default)" },
+          "slug": { "type": "string", "example": "exchange-rate-tips" },
+          "excerpt": { "type": "string", "description": "Excerpt in Thai (default)" },
+          "content": { "type": "string", "description": "HTML content body in Thai (default)" },
+          "thumbnail": { "type": "string", "format": "uri" },
+          "status": { "type": "string", "enum": ["draft", "published"] },
+          "author_id": { "type": "string", "format": "uuid" },
+          "meta_title": { "type": "string", "nullable": true, "description": "SEO meta title in Thai" },
+          "meta_description": { "type": "string", "nullable": true, "description": "SEO meta description in Thai" },
+          "image_alt_text": { "type": "string", "nullable": true, "description": "Image alt text in Thai" },
+          "focus_keyword": { "type": "string", "nullable": true },
+          "title_en": { "type": "string", "example": "Exchange Rate Tips", "description": "Title in English" },
+          "excerpt_en": { "type": "string", "description": "Excerpt in English" },
+          "content_en": { "type": "string", "description": "HTML content body in English" },
+          "meta_title_en": { "type": "string", "nullable": true, "description": "SEO meta title in English" },
+          "meta_description_en": { "type": "string", "nullable": true, "description": "SEO meta description in English" },
+          "image_alt_text_en": { "type": "string", "nullable": true, "description": "Image alt text in English" },
+          "title_cn": { "type": "string", "example": "汇率技巧", "description": "Title in Chinese" },
+          "excerpt_cn": { "type": "string", "description": "Excerpt in Chinese" },
+          "content_cn": { "type": "string", "description": "HTML content body in Chinese" },
+          "meta_title_cn": { "type": "string", "nullable": true, "description": "SEO meta title in Chinese" },
+          "meta_description_cn": { "type": "string", "nullable": true, "description": "SEO meta description in Chinese" },
+          "image_alt_text_cn": { "type": "string", "nullable": true, "description": "Image alt text in Chinese" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Member": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "John Doe" },
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "suspended", "banned"] },
+          "join_date": { "type": "string", "format": "date-time" },
+          "wallet_balance": { "type": "number", "example": 10000 },
+          "verified": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Booking": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "member_id": { "type": "string", "format": "uuid" },
+          "member_name": { "type": "string" },
+          "currency_code": { "type": "string", "example": "USD" },
+          "currency_flag": { "type": "string" },
+          "amount": { "type": "number", "example": 500 },
+          "rate": { "type": "number", "example": 34.50 },
+          "total_thb": { "type": "number", "example": 17250 },
+          "pickup_method": { "type": "string", "enum": ["branch", "wallet"] },
+          "branch_name": { "type": "string", "nullable": true },
+          "pickup_date": { "type": "string", "format": "date-time", "nullable": true },
+          "status": { "type": "string", "enum": ["pending_payment", "pending_review", "approved", "completed"] },
+          "slip_url": { "type": "string", "format": "uri" },
+          "note": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TopupRequest": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "member_id": { "type": "string", "format": "uuid" },
+          "member_name": { "type": "string" },
+          "amount": { "type": "number", "example": 5000 },
+          "transfer_date": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+          "slip_url": { "type": "string", "format": "uri" },
+          "note": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ExchangeRateCache": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "base_currency": { "type": "string", "example": "THB" },
+          "rates": { "type": "object", "additionalProperties": { "type": "number" } },
+          "fetched_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request — validation error or missing fields",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized — not logged in or session expired",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Unauthorized" }
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Resource not found" }
+              }
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Internal server error" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

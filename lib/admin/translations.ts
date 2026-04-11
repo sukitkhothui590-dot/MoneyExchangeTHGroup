@@ -1,0 +1,268 @@
+import { screenCopyEn, screenCopyTh } from "./screenCopy";
+
+export const adminTh = {
+  screens: screenCopyTh,
+  common: {
+    loading: "กำลังโหลด...",
+    loadingData: "กำลังโหลดข้อมูล...",
+    mockOnly: "เฉพาะข้อมูลจำลอง",
+    copyright: "© 2026 MoneyExchangeTHGroup สงวนลิขสิทธิ์",
+  },
+  sidebar: {
+    mainMenu: "เมนูหลัก",
+    nav: {
+      dashboard: "แดชบอร์ด",
+      customers: "จัดการข้อมูลลูกค้า",
+      bookings: "การจอง",
+      transactions: "ธุรกรรม",
+      reports: "รายงาน",
+      rates: "อัตราแลกเปลี่ยน",
+      branches: "จัดการสาขา",
+      articles: "จัดการบทความ",
+      adminUsers: "ผู้ดูแลระบบ",
+      systemStatus: "สถานะระบบ",
+    },
+  },
+  header: {
+    profile: "โปรไฟล์",
+    logout: "ออกจากระบบ",
+    adminUser: "ผู้ดูแลระบบ",
+  },
+  login: {
+    title: "ระบบจัดการหลังบ้าน",
+    subtitle: "เข้าสู่ระบบเพื่อดำเนินการ",
+    email: "อีเมล",
+    password: "รหัสผ่าน",
+    rememberMe: "จดจำฉัน",
+    forgotPassword: "ลืมรหัสผ่าน?",
+    submit: "เข้าสู่ระบบ",
+    submitting: "กำลังเข้าสู่ระบบ...",
+    invalidCreds: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+    genericError: "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง",
+  },
+  lang: { th: "ไทย", en: "English" },
+  pages: {
+    dashboard: { title: "แดชบอร์ด", subtitle: "ภาพรวมการดำเนินงาน" },
+    customers: {
+      titleDisabled: "จัดการข้อมูลลูกค้า",
+      subtitleDisabled: "เปิดข้อมูลจำลองด้วย NEXT_PUBLIC_USE_MOCK_DATA",
+      title: "จัดการข้อมูลลูกค้า",
+      subtitle: "สร้าง อ่าน แก้ ลบ ข้อมูลจำลอง (localStorage)",
+    },
+    bookings: {
+      title: "จัดการการจอง",
+      subtitle: "ตรวจสอบสลิป อนุมัติการจอง และออก Booking ID",
+    },
+    transactions: {
+      titleDisabled: "ธุรกรรม",
+      subtitleDisabled: "เฉพาะข้อมูลจำลอง",
+      title: "ธุรกรรมแลกเงิน",
+      subtitle:
+        "ประวัติจำลองจาก POS mock — ผูกสมาชิกและ KYC สำหรับตรวจทาน (localStorage)",
+    },
+    reports: {
+      titleDisabled: "รายงาน",
+      subtitleDisabled: "เฉพาะข้อมูลจำลอง",
+      title: "รายงาน",
+      subtitle:
+        "สรุปธุรกรรม mock รายวัน / ตามสาขา / ตามสกุลเงิน + visit และสถานะ KYC สมาชิก",
+    },
+    rates: {
+      titleLoading: "อัตราแลกเปลี่ยน",
+      subtitleLoading: "กำลังโหลด...",
+      title: "อัตราแลกเปลี่ยน",
+      subtitle: "จัดการอัตราซื้อ-ขายและมาร์จิ้นของสกุลเงิน",
+    },
+    branches: {
+      titleLoading: "จัดการสาขา",
+      subtitleLoading: "กำลังโหลด...",
+      title: "จัดการสาขา",
+      subtitle: "เพิ่ม แก้ไข หรือลบสาขาของร้าน",
+    },
+    articles: {
+      title: "จัดการบทความ",
+      subtitle: "สร้าง แก้ไข และเผยแพร่บทความสำหรับเว็บไซต์",
+      newArticle: "สร้างบทความ",
+    },
+    adminUsers: {
+      title: "ผู้ดูแลระบบ",
+      subtitle: "จัดการบัญชีผู้ดูแลระบบ เพิ่ม ลบ และรีเซ็ตรหัสผ่าน",
+    },
+    systemStatus: {
+      title: "สถานะระบบ",
+      subtitle: "ตรวจสอบสถานะการทำงานของระบบ",
+    },
+    profile: {
+      title: "โปรไฟล์",
+      subtitle: "จัดการข้อมูลบัญชีผู้ดูแลระบบ",
+    },
+    wallet: {
+      title: "จัดการวอลเล็ต",
+      subtitle: "ตรวจสอบและอนุมัติคำขอเติมเงิน",
+    },
+    members: {
+      title: "จัดการสมาชิก",
+      subtitle: "ดูข้อมูลสมาชิกทั้งหมด ค้นหา แก้ไข และระงับบัญชี",
+    },
+  },
+  dashboard: {
+    statCurrencies: "สกุลเงินที่ใช้งาน",
+    statBranches: "สาขาทั้งหมด",
+    statArticles: "บทความทั้งหมด",
+    statAdmins: "ผู้ดูแลระบบ",
+    ratesLatest: "อัตราแลกเปลี่ยนล่าสุด",
+    manageAll: "จัดการทั้งหมด",
+    noCurrencies: "ยังไม่มีข้อมูลสกุลเงิน",
+    colCurrency: "สกุลเงิน",
+    colBuy: "ราคารับซื้อ",
+    colSell: "ราคาขาย",
+    articlesLatest: "บทความล่าสุด",
+    viewAll: "ดูทั้งหมด",
+    noArticles: "ยังไม่มีบทความ",
+    news: "ข่าว",
+    article: "บทความ",
+    statusPublished: "เผยแพร่",
+    statusDraft: "ฉบับร่าง",
+    branchesAll: "สาขาทั้งหมด",
+    manage: "จัดการ",
+    noBranches: "ยังไม่มีสาขา",
+    branchOpen: "เปิดให้บริการ",
+    branchClosed: "ปิดให้บริการ",
+    quickLinks: "ลิงก์ด่วน",
+  },
+} as const;
+
+export const adminEn = {
+  screens: screenCopyEn,
+  common: {
+    loading: "Loading...",
+    loadingData: "Loading data...",
+    mockOnly: "mock only",
+    copyright: "© 2026 MoneyExchangeTHGroup. All rights reserved.",
+  },
+  sidebar: {
+    mainMenu: "Main menu",
+    nav: {
+      dashboard: "Dashboard",
+      customers: "Identity Management",
+      bookings: "Bookings",
+      transactions: "Transactions",
+      reports: "Reports",
+      rates: "Exchange rates",
+      branches: "Branches",
+      articles: "Articles",
+      adminUsers: "Admin users",
+      systemStatus: "System status",
+    },
+  },
+  header: {
+    profile: "Profile",
+    logout: "Sign out",
+    adminUser: "Administrator",
+  },
+  login: {
+    title: "Admin panel",
+    subtitle: "Sign in to continue",
+    email: "Email",
+    password: "Password",
+    rememberMe: "Remember me",
+    forgotPassword: "Forgot password?",
+    submit: "Sign in",
+    submitting: "Signing in...",
+    invalidCreds: "Invalid email or password",
+    genericError: "Something went wrong. Please try again.",
+  },
+  lang: { th: "ไทย", en: "English" },
+  pages: {
+    dashboard: { title: "Dashboard", subtitle: "Operations overview" },
+    customers: {
+      titleDisabled: "Identity Management",
+      subtitleDisabled: "Enable mock with NEXT_PUBLIC_USE_MOCK_DATA",
+      title: "Identity Management",
+      subtitle: "Mock CRUD (localStorage)",
+    },
+    bookings: {
+      title: "Bookings",
+      subtitle: "Verify slips, approve bookings, issue Booking ID",
+    },
+    transactions: {
+      titleDisabled: "Transactions",
+      subtitleDisabled: "mock only",
+      title: "Exchange transactions",
+      subtitle:
+        "Mock history from POS — member + KYC context for review (localStorage)",
+    },
+    reports: {
+      titleDisabled: "Reports",
+      subtitleDisabled: "mock only",
+      title: "Reports",
+      subtitle:
+        "Mock txns by day, branch & currency + POS visits + member KYC breakdown",
+    },
+    rates: {
+      titleLoading: "Exchange rates",
+      subtitleLoading: "Loading...",
+      title: "Exchange rates",
+      subtitle: "Manage buy/sell rates and currency margins",
+    },
+    branches: {
+      titleLoading: "Branches",
+      subtitleLoading: "Loading...",
+      title: "Branches",
+      subtitle: "Add, edit, or remove store branches",
+    },
+    articles: {
+      title: "Articles",
+      subtitle: "Create, edit, and publish website content",
+      newArticle: "New article",
+    },
+    adminUsers: {
+      title: "Admin users",
+      subtitle: "Manage admin accounts, add, remove, reset passwords",
+    },
+    systemStatus: {
+      title: "System status",
+      subtitle: "Check system health and services",
+    },
+    profile: {
+      title: "Profile",
+      subtitle: "Manage your admin account",
+    },
+    wallet: {
+      title: "Wallet",
+      subtitle: "Review and approve top-up requests",
+    },
+    members: {
+      title: "Members",
+      subtitle: "View, search, edit, and suspend member accounts",
+    },
+  },
+  dashboard: {
+    statCurrencies: "Active currencies",
+    statBranches: "Branches",
+    statArticles: "Articles",
+    statAdmins: "Admin users",
+    ratesLatest: "Latest exchange rates",
+    manageAll: "Manage all",
+    noCurrencies: "No currency data yet",
+    colCurrency: "Currency",
+    colBuy: "Buy",
+    colSell: "Sell",
+    articlesLatest: "Latest articles",
+    viewAll: "View all",
+    noArticles: "No articles yet",
+    news: "News",
+    article: "Article",
+    statusPublished: "Published",
+    statusDraft: "Draft",
+    branchesAll: "All branches",
+    manage: "Manage",
+    noBranches: "No branches yet",
+    branchOpen: "Open",
+    branchClosed: "Closed",
+    quickLinks: "Quick links",
+  },
+} as const;
+
+export type AdminTranslations = typeof adminTh;
+export type AdminLocale = "th" | "en";

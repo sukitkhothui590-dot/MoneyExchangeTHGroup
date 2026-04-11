@@ -1,0 +1,95 @@
+import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+
+// GET /api/bookings — List all bookings
+export async function GET(request: Request) {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status");
+
+    let query = supabase
+      .from("bookings")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (status) {
+      query = query.eq(
+        "status",
+        status as
+          | "pending_payment"
+          | "pending_review"
+          | "approved"
+          | "completed",
+      );
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ data });
+  } catch {
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+// POST /api/bookings — Create new booking
+export async function POST(request: Request) {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    const { data, error } = await supabase
+      .from("bookings")
+      .insert({
+        member_id: body.member_id || body.memberId,
+        member_name: body.member_name || body.memberName,
+        currency_code: body.currency_code || body.currencyCode,
+        currency_flag: body.currency_flag || body.currencyFlag || "",
+        amount: body.amount,
+        rate: body.rate,
+        total_thb: body.total_thb || body.totalThb,
+        pickup_method: body.pickup_method || body.pickupMethod || "branch",
+        branch_name: body.branch_name || body.branchName || null,
+        pickup_date: body.pickup_date || body.pickupDate || null,
+        status: body.status || "pending_payment",
+        slip_url: body.slip_url || body.slipUrl || "",
+        note: body.note || "",
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ data }, { status: 201 });
+  } catch {
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
