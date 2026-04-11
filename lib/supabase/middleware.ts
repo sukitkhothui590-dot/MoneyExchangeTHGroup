@@ -21,9 +21,8 @@ export async function updateSession(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          request.cookies.set(name, value),
-        );
+        // Do not call request.cookies.set — it throws / breaks on Edge (Vercel).
+        // Only mutate the response cookies (Supabase + Next.js guidance).
         supabaseResponse = NextResponse.next({
           request,
         });
