@@ -16,7 +16,7 @@ export type Database = {
           email: string;
           avatar_url: string | null;
           phone: string | null;
-          role: "admin" | "customer";
+          role: "admin" | "customer" | "staff";
           terms_accepted_at: string | null;
           notification_email: string | null;
           created_at: string;
@@ -27,7 +27,7 @@ export type Database = {
           email: string;
           avatar_url?: string | null;
           phone?: string | null;
-          role?: "admin" | "customer";
+          role?: "admin" | "customer" | "staff";
           terms_accepted_at?: string | null;
           notification_email?: string | null;
           created_at?: string;
@@ -38,7 +38,7 @@ export type Database = {
           email?: string;
           avatar_url?: string | null;
           phone?: string | null;
-          role?: "admin" | "customer";
+          role?: "admin" | "customer" | "staff";
           terms_accepted_at?: string | null;
           notification_email?: string | null;
           created_at?: string;
@@ -191,6 +191,7 @@ export type Database = {
           wallet_balance: number;
           verified: boolean;
           created_at: string;
+          identity_lookup_key: string | null;
         };
         Insert: {
           id?: string;
@@ -202,6 +203,7 @@ export type Database = {
           wallet_balance?: number;
           verified?: boolean;
           created_at?: string;
+          identity_lookup_key?: string | null;
         };
         Update: {
           id?: string;
@@ -213,6 +215,7 @@ export type Database = {
           wallet_balance?: number;
           verified?: boolean;
           created_at?: string;
+          identity_lookup_key?: string | null;
         };
         Relationships: [];
       };
@@ -228,6 +231,7 @@ export type Database = {
           total_thb: number;
           pickup_method: "branch" | "wallet";
           branch_name: string | null;
+          branch_id: string | null;
           pickup_date: string | null;
           status:
             | "pending_payment"
@@ -236,6 +240,7 @@ export type Database = {
             | "completed";
           slip_url: string;
           note: string;
+          confirmation_code: string;
           created_at: string;
         };
         Insert: {
@@ -249,6 +254,7 @@ export type Database = {
           total_thb: number;
           pickup_method: "branch" | "wallet";
           branch_name?: string | null;
+          branch_id?: string | null;
           pickup_date?: string | null;
           status?:
             | "pending_payment"
@@ -257,6 +263,7 @@ export type Database = {
             | "completed";
           slip_url?: string;
           note?: string;
+          confirmation_code?: string;
           created_at?: string;
         };
         Update: {
@@ -270,6 +277,7 @@ export type Database = {
           total_thb?: number;
           pickup_method?: "branch" | "wallet";
           branch_name?: string | null;
+          branch_id?: string | null;
           pickup_date?: string | null;
           status?:
             | "pending_payment"
@@ -278,6 +286,7 @@ export type Database = {
             | "completed";
           slip_url?: string;
           note?: string;
+          confirmation_code?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -441,6 +450,153 @@ export type Database = {
         };
         Relationships: [];
       };
+      staff_branch_assignments: {
+        Row: {
+          user_id: string;
+          branch_id: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          branch_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          branch_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      kyc_submissions: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          member_id: string;
+          staff_user_id: string | null;
+          session_key: string;
+          status: "pending" | "verified" | "rejected";
+          full_name: string;
+          id_number: string;
+          document_storage_path: string | null;
+          note: string;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          member_id: string;
+          staff_user_id?: string | null;
+          session_key: string;
+          status?: "pending" | "verified" | "rejected";
+          full_name?: string;
+          id_number?: string;
+          document_storage_path?: string | null;
+          note?: string;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          member_id?: string;
+          staff_user_id?: string | null;
+          session_key?: string;
+          status?: "pending" | "verified" | "rejected";
+          full_name?: string;
+          id_number?: string;
+          document_storage_path?: string | null;
+          note?: string;
+        };
+        Relationships: [];
+      };
+      audit_log: {
+        Row: {
+          id: string;
+          created_at: string;
+          actor_id: string;
+          action: string;
+          entity: string;
+          entity_id: string;
+          payload: Json | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          actor_id: string;
+          action: string;
+          entity: string;
+          entity_id: string;
+          payload?: Json | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          actor_id?: string;
+          action?: string;
+          entity?: string;
+          entity_id?: string;
+          payload?: Json | null;
+        };
+        Relationships: [];
+      };
+      pos_transactions: {
+        Row: {
+          id: string;
+          created_at: string;
+          member_id: string;
+          branch_id: string;
+          staff_user_id: string;
+          currency_code: string;
+          amount: number;
+          rate: number;
+          total_thb: number;
+          note: string;
+          status: "active" | "voided";
+          voided_at: string | null;
+          void_reason: string;
+          voided_by: string | null;
+          rate_source: string;
+          margin_applied_percent: number | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          member_id: string;
+          branch_id: string;
+          staff_user_id: string;
+          currency_code: string;
+          amount: number;
+          rate: number;
+          total_thb: number;
+          note?: string;
+          status?: "active" | "voided";
+          voided_at?: string | null;
+          void_reason?: string;
+          voided_by?: string | null;
+          rate_source?: string;
+          margin_applied_percent?: number | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          member_id?: string;
+          branch_id?: string;
+          staff_user_id?: string;
+          currency_code?: string;
+          amount?: number;
+          rate?: number;
+          total_thb?: number;
+          note?: string;
+          status?: "active" | "voided";
+          voided_at?: string | null;
+          void_reason?: string;
+          voided_by?: string | null;
+          rate_source?: string;
+          margin_applied_percent?: number | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -473,6 +629,8 @@ export type ContactMessage =
 export type Branch = Database["public"]["Tables"]["branches"]["Row"];
 export type BranchCurrencyMargin =
   Database["public"]["Tables"]["branch_currency_margins"]["Row"];
+export type PosTransaction =
+  Database["public"]["Tables"]["pos_transactions"]["Row"];
 
 // Branch margin with merged currency info (from GET /api/branches/[id]/margins)
 export interface BranchMarginEntry {

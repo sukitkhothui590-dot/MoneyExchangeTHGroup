@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import Header from "../../components/Header";
+import AdminPageHelp from "../../components/AdminPageHelp";
 import BookingDetailModal from "../../components/BookingDetailModal";
 import TwemojiFlag from "../../components/TwemojiFlag";
 import type { Booking, BookingStatus } from "@/lib/types/database";
@@ -67,24 +68,27 @@ export default function BookingsPage() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const fetchBookings = useCallback(async () => {
-    if (USE_MOCK_DATA) {
-      setBookings(
-        getAdminBookings().map((c) => customerBookingToBooking(c)),
-      );
-      setLoading(false);
-      return;
-    }
+    setLoading(true);
     try {
       const res = await fetch("/api/bookings");
       if (res.ok) {
         const json = await res.json();
-        setBookings(json.data ?? []);
+        const rows = (json.data ?? []) as Booking[];
+        if (rows.length > 0 || !USE_MOCK_DATA) {
+          setBookings(rows);
+          setLoading(false);
+          return;
+        }
       }
     } catch {
-      // ignore
-    } finally {
-      setLoading(false);
+      /* ignore */
     }
+    if (USE_MOCK_DATA) {
+      setBookings(
+        getAdminBookings().map((c) => customerBookingToBooking(c)),
+      );
+    }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -160,6 +164,13 @@ export default function BookingsPage() {
         }
       />
       <div className="flex-1 p-4 sm:p-6 lg:p-8">
+        <AdminPageHelp
+          idPrefix="bookings"
+          title={p.helpTitle}
+          expandLabel={t.common.helpExpand}
+          collapseLabel={t.common.helpCollapse}
+          sections={p.helpSections}
+        />
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
           <div className="relative w-full max-w-xs">

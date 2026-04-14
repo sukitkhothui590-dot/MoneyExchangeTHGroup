@@ -13,6 +13,8 @@ import {
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import SiteImage from "@/components/site/SiteImage";
+import AdminPageHelp from "../../../components/AdminPageHelp";
+import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
 
 type Lang = "th" | "en" | "cn";
 
@@ -52,6 +54,8 @@ interface ArticleForm {
 }
 
 function ArticleEditor() {
+  const { t } = useAdminLanguage();
+  const help = t.pages.articleEditor;
   const router = useRouter();
   const searchParams = useSearchParams();
   const articleId = searchParams.get("id");
@@ -359,6 +363,15 @@ function ArticleEditor() {
 
       {/* Editor body */}
       <div className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto px-8 pt-6">
+          <AdminPageHelp
+            idPrefix="article-editor"
+            title={help.helpTitle}
+            expandLabel={t.common.helpExpand}
+            collapseLabel={t.common.helpCollapse}
+            sections={help.helpSections}
+          />
+        </div>
         {loadingArticle ? (
           <div className="flex items-center justify-center py-20">
             <p className="text-sm text-muted">กำลังโหลดบทความ...</p>

@@ -5,13 +5,14 @@ import { createPortal } from "react-dom";
 import SiteImage from "@/components/site/SiteImage";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { fetchCurrencies } from "@/lib/api";
 import { useLanguage, type Locale } from "@/lib/i18n";
 import { currencyCodeToFlagCountry } from "@/lib/currencyFlagCountry";
 import { getRatesSync } from "@/lib/mock/rates";
 import HeaderAccountButtons from "@/components/layout/HeaderAccountButtons";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import type { CurrencyRate } from "@/lib/types/rate";
-import { SITE_LOGO_SRC } from "@/lib/siteLogo";
+import { SITE_NAVBAR_LOGO_SRC } from "@/lib/siteLogo";
 
 /** ความสูงแถบขาว (tier 2) — คงที่; โลโก้ใหญ่กว่านี้ได้โดยล้นออกด้านบน/ล่าง */
 const NAVBAR_ROW_PX = 60;
@@ -37,7 +38,7 @@ function NavbarLogoMark({
       }}
     >
       <SiteImage
-        src={SITE_LOGO_SRC}
+        src={SITE_NAVBAR_LOGO_SRC}
         alt="MoneyExchangeTHGroup"
         width={NAVBAR_LOGO_PX}
         height={NAVBAR_LOGO_PX}
@@ -273,8 +274,31 @@ export default function Header() {
   const [mobileLangOpen, setMobileLangOpen] = useState(false);
   const mobileLangRef = useRef<HTMLDivElement>(null);
   const currentLang = languages.find((l) => l.code === locale)!;
+  const [rateStrip, setRateStrip] = useState<CurrencyRate[]>(
+    () => getRatesSync().rates,
+  );
 
-  const rateStrip = useMemo(() => getRatesSync().rates, []);
+  useEffect(() => {
+    let mounted = true;
+
+    const loadRates = async () => {
+      const live = await fetchCurrencies(locale);
+      if (!mounted) return;
+      if (live.rates.length > 0) {
+        setRateStrip(live.rates);
+      }
+    };
+
+    void loadRates();
+    const timer = window.setInterval(() => {
+      void loadRates();
+    }, 30_000);
+
+    return () => {
+      mounted = false;
+      window.clearInterval(timer);
+    };
+  }, [locale]);
 
   const rateMarqueeItems = (rates: CurrencyRate[], keyPrefix: string) =>
     rates.map((r, i) => (
@@ -768,7 +792,7 @@ export default function Header() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-1">
+            <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-1">
               {navLinks.map((link) => {
                 const isActive = isNavLinkActive(pathname, link);
                 const isOpen = openMobileDropdownKey === link.key;

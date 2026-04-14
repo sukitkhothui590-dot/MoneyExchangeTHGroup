@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Header from "../../components/Header";
+import AdminPageHelp from "../../components/AdminPageHelp";
 import type { Branch } from "@/lib/types/database";
 import {
   MagnifyingGlassIcon,
@@ -224,6 +225,13 @@ export default function BranchesPage() {
       />
 
       <div className="flex-1 p-4 sm:p-6 lg:p-8">
+        <AdminPageHelp
+          idPrefix="branches"
+          title={p.helpTitle}
+          expandLabel={t.common.helpExpand}
+          collapseLabel={t.common.helpCollapse}
+          sections={p.helpSections}
+        />
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
             {error}

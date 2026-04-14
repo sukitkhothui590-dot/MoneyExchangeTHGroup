@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Header from "../../components/Header";
+import AdminPageHelp from "../../components/AdminPageHelp";
 import MemberDetailModal from "../../components/MemberDetailModal";
 import type { Member } from "@/lib/types/database";
 import { USE_MOCK_DATA } from "@/lib/config";
@@ -160,6 +161,13 @@ export default function MembersPage() {
     <>
       <Header title={p.title} subtitle={p.subtitle} />
       <div className="flex-1 p-4 sm:p-6 lg:p-8">
+        <AdminPageHelp
+          idPrefix="members"
+          title={p.helpTitle}
+          expandLabel={t.common.helpExpand}
+          collapseLabel={t.common.helpCollapse}
+          sections={p.helpSections}
+        />
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
           <div className="relative w-full max-w-xs">

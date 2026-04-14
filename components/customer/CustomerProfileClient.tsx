@@ -10,7 +10,10 @@ import {
   getTransactionsForUser,
   seedTransactionsForUserIfEmpty,
 } from "@/lib/mock/store";
-import type { CustomerBooking, MockTxn } from "@/lib/mock/store";
+import { customerBookingToBooking } from "@/lib/mock/bookingAdapter";
+import type { MockTxn } from "@/lib/mock/store";
+import type { Booking } from "@/lib/types/database";
+import { USE_MOCK_DATA } from "@/lib/config";
 import { useLanguage } from "@/lib/i18n";
 import { formatDateTime, type Locale } from "@/lib/api";
 
@@ -38,7 +41,7 @@ export default function CustomerProfileClient() {
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [bookings, setBookings] = useState<CustomerBooking[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [txns, setTxns] = useState<MockTxn[]>([]);
 
   const load = useCallback(async () => {
@@ -71,7 +74,22 @@ export default function CustomerProfileClient() {
       u.id,
       (u.user_metadata?.full_name as string) || "ลูกค้า",
     );
-    setBookings(getCustomerBookingsForUser(u.id));
+    let bookingRows: Booking[] = [];
+    try {
+      const res = await fetch("/api/customer/bookings");
+      if (res.ok) {
+        const json = (await res.json()) as { data?: Booking[] };
+        bookingRows = json.data ?? [];
+      }
+    } catch {
+      /* fall through */
+    }
+    if (bookingRows.length === 0 && USE_MOCK_DATA) {
+      bookingRows = getCustomerBookingsForUser(u.id).map(
+        customerBookingToBooking,
+      );
+    }
+    setBookings(bookingRows);
     setTxns(getTransactionsForUser(u.id));
     setLoading(false);
   }, [router]);
@@ -311,12 +329,6 @@ export default function CustomerProfileClient() {
                         {p.bookConfirmationCode}: {b.confirmation_code}
                       </span>
                     ) : null}
-                    {b.fx_direction === "sell_fx"
-                      ? p.bookDirTagSell
-                      : b.fx_direction === "buy_fx"
-                        ? p.bookDirTagBuy
-                        : ""}
-                    {b.fx_direction ? " · " : ""}
                     {b.currency_code} {b.amount?.toLocaleString()} →{" "}
                     {b.total_thb?.toLocaleString()} THB
                   </span>
@@ -325,7 +337,7 @@ export default function CustomerProfileClient() {
                   </span>
                 </div>
                 <p className="text-surface-600 mt-1">
-                  {p.bookingBranch}: {b.branch}
+                  {p.bookingBranch}: {b.branch_name ?? "—"}
                   {b.branch_id ? (
                     <span className="text-surface-400"> ({b.branch_id})</span>
                   ) : null}
@@ -334,6 +346,11 @@ export default function CustomerProfileClient() {
                   <p className="text-surface-600 mt-0.5">
                     {p.bookVisitTime}:{" "}
                     {formatDateTime(b.pickup_date, loc)}
+                  </p>
+                ) : null}
+                {b.note ? (
+                  <p className="text-surface-500 mt-1 text-xs whitespace-pre-wrap">
+                    {b.note}
                   </p>
                 ) : null}
                 <p className="text-xs text-surface-400 mt-1">

@@ -1,12 +1,10 @@
 "use client";
 
-/* eslint-disable react-hooks/set-state-in-effect -- one-time KYC form hydration from localStorage mock */
-
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import SiteImage from "@/components/site/SiteImage";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { usePosMockAuth } from "@/lib/context/PosMockAuth";
+import { usePosSession } from "@/lib/context/PosSessionContext";
 import {
   getKycSession,
   upsertKyc,
@@ -20,37 +18,88 @@ export default function KycSessionClient() {
   const searchParams = useSearchParams();
   const memberId = searchParams.get("memberId") ?? "";
   const router = useRouter();
-  const { staffLabel } = usePosMockAuth();
+  const { userEmail } = usePosSession();
   const [fullName, setFullName] = useState("");
   const [idNumber, setIdNumber] = useState("");
   const [docPreview, setDocPreview] = useState<string | null>(null);
   const [rec, setRec] = useState<KycRecord | null>(null);
+  const [apiOk, setApiOk] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!staffLabel) router.replace("/pos/login");
-  }, [staffLabel, router]);
+    if (!userEmail) router.replace("/pos/login");
+  }, [userEmail, router]);
 
-  /* Hydrate from localStorage mock once session/member are known; avoids SSR mismatch. */
   useEffect(() => {
     if (!memberId || !sessionId) return;
-    const existing = getKycSession(sessionId);
-    if (existing) {
-      setRec(existing);
-      setFullName(existing.fullName);
-      setIdNumber(existing.idNumber);
-      return;
-    }
-    const initial: KycRecord = {
-      sessionId,
-      memberId,
-      fullName: "",
-      idNumber: "",
-      status: "pending",
-      updatedAt: new Date().toISOString(),
-    };
-    upsertKyc(initial);
-    setRec(initial);
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/kyc/submissions?sessionKey=${encodeURIComponent(sessionId)}`,
+        );
+        if (res.ok) {
+          const json = await res.json();
+          const row = json.data;
+          if (row) {
+            setApiOk(true);
+            setFullName(row.full_name ?? "");
+            setIdNumber(row.id_number ?? "");
+            setRec({
+              sessionId,
+              memberId,
+              fullName: row.full_name ?? "",
+              idNumber: row.id_number ?? "",
+              status: row.status,
+              updatedAt: row.updated_at ?? new Date().toISOString(),
+            });
+            return;
+          }
+        }
+      } catch {
+        /* fallback mock */
+      }
+      setApiOk(false);
+      const existing = getKycSession(sessionId);
+      if (existing) {
+        setRec(existing);
+        setFullName(existing.fullName);
+        setIdNumber(existing.idNumber);
+        return;
+      }
+      const initial: KycRecord = {
+        sessionId,
+        memberId,
+        fullName: "",
+        idNumber: "",
+        status: "pending",
+        updatedAt: new Date().toISOString(),
+      };
+      upsertKyc(initial);
+      setRec(initial);
+    })();
   }, [memberId, sessionId]);
+
+  const persistRemote = async (payload: {
+    full_name: string;
+    id_number: string;
+    status: "pending" | "verified" | "rejected";
+  }) => {
+    try {
+      await fetch("/api/kyc/submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_key: sessionId,
+          member_id: memberId,
+          full_name: payload.full_name,
+          id_number: payload.id_number,
+          status: payload.status,
+          note: "",
+        }),
+      });
+    } catch {
+      /* ignore */
+    }
+  };
 
   const saveDraft = () => {
     if (!memberId) return;
@@ -64,31 +113,39 @@ export default function KycSessionClient() {
     };
     upsertKyc(next);
     setRec(next);
+    void persistRemote({
+      full_name: fullName,
+      id_number: idNumber,
+      status: next.status,
+    });
   };
 
   const submitReview = () => {
     saveDraft();
     setKycStatus(sessionId, "pending");
     setRec((r) => (r ? { ...r, status: "pending" } : r));
+    void persistRemote({ full_name: fullName, id_number: idNumber, status: "pending" });
   };
 
   const mockApprove = () => {
     setKycStatus(sessionId, "verified");
     setRec((r) => (r ? { ...r, status: "verified" } : r));
+    void persistRemote({ full_name: fullName, id_number: idNumber, status: "verified" });
   };
 
   const mockReject = () => {
     setKycStatus(sessionId, "rejected");
     setRec((r) => (r ? { ...r, status: "rejected" } : r));
+    void persistRemote({ full_name: fullName, id_number: idNumber, status: "rejected" });
   };
 
-  if (!staffLabel) return null;
+  if (!userEmail) return null;
 
   if (!memberId) {
     return (
-      <div className="space-y-3">
-        <p className="text-sm text-muted">ไม่พบ memberId ใน URL</p>
-        <Link href="/pos/exchange" className="text-brand text-sm">
+      <div className="space-y-3 pos-card-saas rounded-2xl p-4">
+        <p className="text-sm text-slate-600">ไม่พบ memberId ใน URL</p>
+        <Link href="/pos/exchange" className="text-[var(--site-accent)] text-sm font-medium">
           กลับ
         </Link>
       </div>
@@ -97,44 +154,47 @@ export default function KycSessionClient() {
 
   const statusLabel =
     rec?.status === "verified"
-      ? "ยืนยันแล้ว (จำลอง)"
+      ? "ยืนยันแล้ว"
       : rec?.status === "rejected"
-        ? "ไม่ผ่าน (จำลอง)"
+        ? "ไม่ผ่าน"
         : "รอตรวจสอบ";
 
   return (
     <div className="space-y-6 min-w-0">
-      <div>
-        <h1 className="text-xl font-semibold">KYC (จำลอง)</h1>
-        <p className="text-xs text-muted mt-1 break-all">
-          Session: {sessionId}
+      <div className="pos-card-saas rounded-2xl p-4 text-sm space-y-1">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          Session
         </p>
-        <p className="text-sm mt-2">
-          สถานะ: <span className="font-medium">{statusLabel}</span>
+        <p className="text-xs text-slate-500 break-all font-mono">{sessionId}</p>
+        <p className="text-xs text-slate-500">
+          {apiOk ? "บันทึกแบบถาวร (ฐานข้อมูล)" : "จำลองในเบราว์เซอร์ (API ไม่พร้อม)"}
+        </p>
+        <p className="text-sm text-slate-800 pt-1">
+          สถานะ: <span className="font-semibold">{statusLabel}</span>
         </p>
       </div>
 
-      <div className="bg-white border border-border rounded-xl p-4 space-y-3">
+      <div className="pos-card-saas rounded-2xl p-4 sm:p-5 space-y-3">
         <div>
-          <label className="block text-xs text-muted mb-1">ชื่อ–สกุล</label>
+          <label className="block text-xs text-slate-600 font-medium mb-1.5">ชื่อ–สกุล</label>
           <input
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="w-full h-11 px-3 rounded-lg border border-border text-sm min-w-0"
+            className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm min-w-0 focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--site-accent)_25%,transparent)]"
           />
         </div>
         <div>
-          <label className="block text-xs text-muted mb-1">
+          <label className="block text-xs text-slate-600 font-medium mb-1.5">
             เลขบัตรประชาชน (จำลอง)
           </label>
           <input
             value={idNumber}
             onChange={(e) => setIdNumber(e.target.value)}
-            className="w-full h-11 px-3 rounded-lg border border-border text-sm tabular-nums"
+            className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--site-accent)_25%,transparent)]"
           />
         </div>
         <div>
-          <label className="block text-xs text-muted mb-1">
+          <label className="block text-xs text-slate-600 font-medium mb-1.5">
             แนบรูปเอกสาร (แสดงตัวอย่างเท่านั้น)
           </label>
           <input
@@ -158,7 +218,7 @@ export default function KycSessionClient() {
                 fill
                 unoptimized
                 sizes="(max-width: 28rem) 100vw, 28rem"
-                className="rounded-lg border border-border object-contain object-left"
+                className="rounded-xl border border-slate-200 object-contain object-left"
                 placeholderSize="448×192"
               />
             </div>
@@ -167,9 +227,9 @@ export default function KycSessionClient() {
         <button
           type="button"
           onClick={submitReview}
-          className="w-full h-11 rounded-lg bg-brand text-white text-sm font-medium"
+          className="w-full h-11 rounded-xl bg-[#111827] text-white text-sm font-semibold hover:bg-slate-800 transition-colors shadow-sm"
         >
-          ส่งตรวจ (จำลอง)
+          ส่งตรวจ
         </button>
       </div>
 
@@ -177,23 +237,20 @@ export default function KycSessionClient() {
         <button
           type="button"
           onClick={mockApprove}
-          className="flex-1 h-10 rounded-lg border border-border text-sm hover:border-brand"
+          className="flex-1 h-10 rounded-xl pos-card-saas text-sm text-slate-800 hover:shadow-sm"
         >
           จำลอง: อนุมัติ
         </button>
         <button
           type="button"
           onClick={mockReject}
-          className="flex-1 h-10 rounded-lg border border-border text-sm hover:border-border-strong"
+          className="flex-1 h-10 rounded-xl pos-card-saas text-sm text-slate-800 hover:shadow-sm"
         >
           จำลอง: ปฏิเสธ
         </button>
       </div>
 
-      <Link
-        href={`/pos/customer/${memberId}`}
-        className="block text-center text-sm text-brand"
-      >
+      <Link href={`/pos/customer/${memberId}`} className="block text-center text-sm text-[var(--site-accent)]">
         ← กลับลูกค้า
       </Link>
     </div>

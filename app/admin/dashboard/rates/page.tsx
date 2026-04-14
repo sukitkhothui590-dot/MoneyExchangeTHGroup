@@ -10,6 +10,7 @@ import {
   type SetStateAction,
 } from "react";
 import Header from "../../components/Header";
+import AdminPageHelp from "../../components/AdminPageHelp";
 import RateTable from "../../components/RateTable";
 import BranchMarginTable from "../../components/BranchMarginTable";
 import MarginModal from "../../components/MarginModal";
@@ -22,6 +23,7 @@ import {
   PlusIcon,
   BuildingStorefrontIcon,
   ChevronDownIcon,
+  CloudArrowDownIcon,
 } from "@heroicons/react/24/outline";
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
 
@@ -38,6 +40,7 @@ export default function RatesPage() {
   const [showMarginModal, setShowMarginModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const [pullingRates, setPullingRates] = useState(false);
   const [pendingCurrencyCodes, setPendingCurrencyCodes] = useState<string[]>([]);
   const [pendingBranchMarginCodes, setPendingBranchMarginCodes] = useState<string[]>([]);
   const pendingCurrencyRef = useRef<Set<string>>(new Set());
@@ -485,6 +488,47 @@ export default function RatesPage() {
     }
   };
 
+  /** ดึงจาก Frankfurter แบบบังคับ + เพิ่มสกุลที่ยังไม่มีในตาราง (เฉพาะ admin) */
+  const handlePullNewRates = async () => {
+    setPullingRates(true);
+    try {
+      const res = await fetch(
+        "/api/exchange-rates?force=1&syncCurrencies=1",
+        { cache: "no-store" },
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(
+          "warn",
+          "ดึงเรทใหม่ไม่สำเร็จ",
+          (json.error as string) ?? "กรุณาลองใหม่",
+        );
+        return;
+      }
+      const added = (json.data?.synced_currencies?.added ?? []) as string[];
+      const reloaded = await fetchCurrencies(true);
+      if (!reloaded) return;
+      if (selectedBranch !== "global") {
+        await fetchBranchMargins(selectedBranch, true);
+      }
+      showToast(
+        "success",
+        "ดึงเรทใหม่สำเร็จ",
+        added.length > 0
+          ? `เพิ่มสกุลใหม่: ${added.join(", ")}`
+          : "อัปเดตเรทกลางแล้ว — ไม่มีสกุลใหม่ (มีครบในตารางแล้ว)",
+      );
+    } catch {
+      showToast(
+        "warn",
+        "ดึงเรทใหม่ไม่สำเร็จ",
+        "เกิดข้อผิดพลาดในการเชื่อมต่อ",
+      );
+    } finally {
+      setPullingRates(false);
+    }
+  };
+
   const handleRefresh = async () => {
     setLoading(true);
     try {
@@ -545,7 +589,18 @@ export default function RatesPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={handleRefresh}
+              type="button"
+              onClick={() => void handlePullNewRates()}
+              disabled={pullingRates}
+              title="บังคับดึงเรทจาก API ล่าสุด และเพิ่มสกุลเงินที่ยังไม่มีในตาราง (ต้องเป็นแอดมิน)"
+              className="h-9 px-3.5 bg-brand text-white text-sm font-medium rounded-lg hover:bg-brand-dark transition-colors cursor-pointer inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <CloudArrowDownIcon className="w-4 h-4 shrink-0" />
+              {pullingRates ? "กำลังดึงเรท…" : "ดึงเรทใหม่"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleRefresh()}
               className="h-9 px-3.5 border border-border text-sm font-medium text-foreground rounded-lg hover:bg-surface transition-colors cursor-pointer inline-flex items-center gap-2"
             >
               <ArrowPathIcon className="w-4 h-4" />
@@ -572,6 +627,14 @@ export default function RatesPage() {
       />
 
       <div className="flex-1 p-4 sm:p-6 lg:p-8">
+        <AdminPageHelp
+          idPrefix="rates"
+          title={p.helpTitle}
+          expandLabel={t.common.helpExpand}
+          collapseLabel={t.common.helpCollapse}
+          sections={p.helpSections}
+        />
+
         {/* Branch Selector */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">

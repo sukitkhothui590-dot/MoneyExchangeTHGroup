@@ -16,9 +16,9 @@ import {
   ArrowsRightLeftIcon,
   PresentationChartLineIcon,
 } from "@heroicons/react/24/outline";
-import { SITE_LOGO_SRC } from "@/lib/siteLogo";
+import { SITE_LOGO_ON_DARK_CLASS, SITE_LOGO_SRC } from "@/lib/siteLogo";
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
-import AdminLangSwitcher from "./AdminLangSwitcher";
+import { useAdminSidebar } from "./AdminSidebarContext";
 
 const navConfig = [
   { key: "dashboard" as const, href: "/admin/dashboard", icon: Squares2X2Icon },
@@ -41,34 +41,35 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { t } = useAdminLanguage();
+  const { desktopCollapsed } = useAdminSidebar();
 
   const sidebarContent = (
-    <aside className="w-[240px] min-h-screen border-r border-border/80 bg-gradient-to-b from-white via-white to-surface-50 flex flex-col shadow-[4px_0_24px_-8px_rgba(0,0,0,0.06)]">
-      <div className="h-16 flex items-center justify-between gap-2 px-4 border-b border-border/70">
-        <Link href="/admin/dashboard" className="min-w-0 flex-1">
+    <aside className="w-[240px] min-h-screen border-r border-brand-dark/40 bg-gradient-to-b from-brand via-brand to-brand-dark flex flex-col shadow-[4px_0_24px_-8px_rgba(0,0,0,0.2)]">
+      <div className="relative h-16 flex items-center justify-center px-4 border-b border-white/10">
+        <Link
+          href="/admin/dashboard"
+          className="flex min-w-0 justify-center items-center max-w-full"
+        >
           <SiteImage
             src={SITE_LOGO_SRC}
             alt="MoneyExchangeTHGroup"
             width={130}
             height={44}
-            className="object-contain object-left max-h-10 w-auto max-w-[160px]"
+            className={`object-contain object-center max-h-10 w-auto max-w-[160px] ${SITE_LOGO_ON_DARK_CLASS}`}
             bypassPlaceholder
           />
         </Link>
         <button
+          type="button"
           onClick={onClose}
-          className="lg:hidden w-8 h-8 shrink-0 flex items-center justify-center rounded-lg text-muted hover:text-foreground hover:bg-surface transition-colors cursor-pointer"
+          className="lg:hidden absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 shrink-0 flex items-center justify-center rounded-lg text-white/85 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
         >
           <XMarkIcon className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="px-3 pt-3 pb-2 border-b border-border/70">
-        <AdminLangSwitcher className="w-full justify-center" />
-      </div>
-
-      <nav className="flex-1 px-3 py-4 overflow-y-auto">
-        <p className="text-[10px] font-semibold text-muted/60 uppercase tracking-wider px-3 mb-2">
+      <nav className="flex-1 px-3 py-4 overflow-y-auto scrollbar-hide">
+        <p className="text-[10px] font-semibold text-white/45 uppercase tracking-wider px-3 mb-2">
           {t.sidebar.mainMenu}
         </p>
         <div className="space-y-1">
@@ -86,12 +87,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 onClick={onClose}
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 ${
                   isActive
-                    ? "bg-brand text-white shadow-md shadow-brand/25"
-                    : "text-muted hover:text-foreground hover:bg-white/80 border border-transparent hover:border-border/60 hover:shadow-sm hover:translate-x-0.5"
+                    ? "bg-white text-brand shadow-md shadow-black/15"
+                    : "text-white/88 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 hover:translate-x-0.5"
                 }`}
               >
                 <item.icon
-                  className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-white" : ""}`}
+                  className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-brand" : "text-white/90"}`}
                 />
                 {label}
               </Link>
@@ -104,7 +105,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      <div className="hidden lg:block flex-shrink-0">{sidebarContent}</div>
+      <div
+        className={[
+          "hidden lg:flex flex-shrink-0 min-w-0 overflow-hidden transition-[width] duration-200 ease-out",
+          desktopCollapsed ? "lg:w-0" : "lg:w-[240px]",
+        ].join(" ")}
+      >
+        {sidebarContent}
+      </div>
 
       {isOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">

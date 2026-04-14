@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Header from "../../components/Header";
+import AdminPageHelp from "../../components/AdminPageHelp";
 import ApprovalModal from "../../components/ApprovalModal";
 import type { TopupRequest } from "@/lib/types/database";
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
@@ -131,6 +132,13 @@ export default function WalletPage() {
         }
       />
       <div className="flex-1 p-4 sm:p-6 lg:p-8">
+        <AdminPageHelp
+          idPrefix="wallet"
+          title={p.helpTitle}
+          expandLabel={t.common.helpExpand}
+          collapseLabel={t.common.helpCollapse}
+          sections={p.helpSections}
+        />
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <p className="text-sm text-muted">{sh.loadingData}</p>

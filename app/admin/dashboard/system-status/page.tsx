@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Header from "../../components/Header";
+import AdminPageHelp from "../../components/AdminPageHelp";
 import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -267,6 +268,13 @@ export default function SystemStatusPage() {
       />
 
       <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
+        <AdminPageHelp
+          idPrefix="system-status"
+          title={p.helpTitle}
+          expandLabel={t.common.helpExpand}
+          collapseLabel={t.common.helpCollapse}
+          sections={p.helpSections}
+        />
         {/* Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-white border border-border rounded-xl p-4">

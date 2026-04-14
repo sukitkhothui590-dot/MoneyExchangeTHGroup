@@ -3,13 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import {
-  addCustomerBookingForUser,
-  newBookingReference,
-  newMockId,
-  type BookingFxDirection,
-  type BookingAmountInputUnit,
-  type CustomerBooking,
+import type {
+  BookingFxDirection,
+  BookingAmountInputUnit,
 } from "@/lib/mock/store";
 import { computeBookingEstimates } from "@/lib/book/booking-math";
 import {
@@ -250,44 +246,57 @@ export default function BookingForm({
         user.user_metadata?.full_name?.toString() ||
         "ลูกค้า";
       const flag = currencyCodeToFlagEmoji(currency);
-      const confirmationCode = newBookingReference();
+      const directionLabel =
+        direction === "buy_fx"
+          ? p.bookDirectionBuyFx
+          : p.bookDirectionSellFx;
+      const noteLines = [
+        note.trim(),
+        `${p.bookDirection}: ${directionLabel} · ${p.bookAmountUnit}: ${amountUnit === "fx" ? p.bookAmountUnitFx : p.bookAmountUnitThb}`,
+      ].filter(Boolean);
 
-      const row: CustomerBooking = {
-        id: newMockId(),
-        type: "reserve",
-        branch: branchLabel,
-        branch_id: branchId,
-        branch_hours_snapshot: branchHours,
-        member_name: memberName,
-        fx_direction: direction,
-        amount_input_unit: amountUnit,
-        currency_code: currency,
-        currency_flag: flag,
-        amount: Math.round(amountFx * 1e6) / 1e6,
-        rate: rateUsed,
-        total_thb: Math.round(totalThb * 100) / 100,
-        reference_rate_buy: cur.buy_rate,
-        reference_rate_sell: cur.sell_rate,
-        pickup_date: pickupDate.toISOString(),
-        pickup_method: "branch",
-        status: "pending_payment",
-        note: note.trim(),
-        confirmation_code: confirmationCode,
-        created_at: new Date().toISOString(),
+      const res = await fetch("/api/customer/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          branch_id: branchId,
+          branch_name: branchLabel,
+          currency_code: currency,
+          currency_flag: flag,
+          amount: Math.round(amountFx * 1e6) / 1e6,
+          rate: rateUsed,
+          total_thb: Math.round(totalThb * 100) / 100,
+          pickup_method: "branch",
+          pickup_date: pickupDate.toISOString(),
+          status: "pending_payment",
+          note: noteLines.join("\n"),
+        }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg(
+          typeof payload.error === "string"
+            ? payload.error
+            : t.auth.genericError,
+        );
+        setLoading(false);
+        return;
+      }
+      const created = payload.data as {
+        id: string;
+        confirmation_code?: string;
       };
-      addCustomerBookingForUser(user.id, row, memberName);
+      const reference =
+        created?.confirmation_code?.trim() || created?.id || "";
       setConfirmed({
-        reference: confirmationCode,
+        reference,
         branchLabel,
         pickupIso: pickupDate.toISOString(),
         memberName,
         currencyCode: currency,
         amountFx,
         totalThb,
-        directionLabel:
-          direction === "buy_fx"
-            ? p.bookDirectionBuyFx
-            : p.bookDirectionSellFx,
+        directionLabel,
       });
       resetForm();
     } catch {

@@ -14,10 +14,12 @@ export function customerBookingToBooking(c: CustomerBooking): Booking {
     total_thb: c.total_thb ?? 0,
     pickup_method: c.pickup_method ?? "branch",
     branch_name: c.branch,
-    pickup_date: c.slot ?? null,
+    branch_id: null,
+    pickup_date: c.pickup_date ?? c.slot ?? null,
     status: c.status,
     slip_url: c.slip_preview ?? "",
     note: c.note ?? "",
+    confirmation_code: c.confirmation_code ?? "",
     created_at: c.created_at,
   };
 }

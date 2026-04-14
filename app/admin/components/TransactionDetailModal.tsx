@@ -13,9 +13,19 @@ import type {
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
 import type { AdminTranslations } from "@/lib/admin/translations";
 
+export type LiveMemberBasics = {
+  email: string;
+  phone: string;
+  wallet_balance: number;
+  verified: boolean;
+  kycLatest?: string | null;
+};
+
 type Props = {
-  txn: MockTxn | null;
+  txn: (MockTxn & { pos_status?: "active" | "voided" }) | null;
   member: MockMember | undefined;
+  /** ข้อมูลจริงจาก API เมื่อไม่ได้ใช้ mock member */
+  liveMember?: LiveMemberBasics | null;
   branchName: string;
   isOpen: boolean;
   onClose: () => void;
@@ -72,6 +82,7 @@ function Row({
 export default function TransactionDetailModal({
   txn,
   member,
+  liveMember,
   branchName,
   isOpen,
   onClose,
@@ -156,6 +167,25 @@ export default function TransactionDetailModal({
               </Row>
               <Row label={s.colBranch}>{branchName}</Row>
               <Row label={s.colStaff}>{txn.staff_label}</Row>
+              {txn.pos_status ? (
+                <Row label={locale === "th" ? "สถานะรายการ" : "Txn status"}>
+                  <span
+                    className={
+                      txn.pos_status === "voided"
+                        ? "font-medium text-red-700"
+                        : "font-medium text-emerald-700"
+                    }
+                  >
+                    {txn.pos_status === "voided"
+                      ? locale === "th"
+                        ? "ยกเลิก"
+                        : "Voided"
+                      : locale === "th"
+                        ? "ใช้งาน"
+                        : "Active"}
+                  </span>
+                </Row>
+              ) : null}
             </div>
           </section>
 
@@ -211,6 +241,43 @@ export default function TransactionDetailModal({
                 ) : null}
                 <Row label={km.servicePurpose}>{kyc.service_purpose}</Row>
               </div>
+            ) : liveMember ? (
+              <div className="rounded-xl border border-border/80 bg-white/90 px-3 shadow-sm">
+                <Row label={s.colMember}>
+                  <span className="font-medium">{txn.member_name}</span>
+                  <span className="block font-mono text-[11px] text-muted mt-0.5">
+                    {txn.member_id}
+                  </span>
+                </Row>
+                <Row label={s.memberEmail}>{liveMember.email || "—"}</Row>
+                <Row label={s.memberPhone}>{liveMember.phone || "—"}</Row>
+                <Row label={s.memberWallet}>
+                  <span className="tabular-nums">
+                    ฿{liveMember.wallet_balance.toLocaleString(numLocale)}
+                  </span>
+                </Row>
+                <Row label={km.legalName}>
+                  {liveMember.verified
+                    ? locale === "th"
+                      ? "ยืนยันตัวตนแล้ว (ระบบ)"
+                      : "Verified (account)"
+                    : locale === "th"
+                      ? "ยังไม่ยืนยันตัวตน (ระบบ)"
+                      : "Not verified (account)"}
+                </Row>
+                {liveMember.kycLatest ? (
+                  <Row label={s.colKyc}>
+                    <span className="text-sm font-medium text-foreground">
+                      {liveMember.kycLatest}
+                    </span>
+                  </Row>
+                ) : null}
+                <p className="text-[11px] text-muted py-2 border-t border-border/60">
+                  {locale === "th"
+                    ? "รายละเอียด KYC แบบเต็มมีในโหมดจำลองหรือระบบ KYC"
+                    : "Full KYC narrative is available in mock mode or the KYC system."}
+                </p>
+              </div>
             ) : (
               <p className="text-sm text-muted rounded-xl border border-dashed border-border/80 px-3 py-4 bg-surface/30">
                 {s.memberMissing}
@@ -222,6 +289,22 @@ export default function TransactionDetailModal({
             <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <Link
                 href={`/admin/dashboard/customers?q=${encodeURIComponent(member.id)}`}
+                className="inline-flex justify-center items-center h-10 px-4 rounded-xl bg-brand text-white text-sm font-medium shadow-md shadow-brand/20 hover:opacity-95 transition-opacity"
+              >
+                {s.linkCustomerProfile}
+              </Link>
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex justify-center items-center h-10 px-4 rounded-xl border border-border/80 text-sm hover:bg-surface transition-colors"
+              >
+                {sh.cancel}
+              </button>
+            </div>
+          ) : liveMember ? (
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <Link
+                href={`/admin/dashboard/customers?q=${encodeURIComponent(txn.member_id)}`}
                 className="inline-flex justify-center items-center h-10 px-4 rounded-xl bg-brand text-white text-sm font-medium shadow-md shadow-brand/20 hover:opacity-95 transition-opacity"
               >
                 {s.linkCustomerProfile}

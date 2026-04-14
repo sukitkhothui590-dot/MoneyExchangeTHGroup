@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Header from "../../components/Header";
+import AdminPageHelp from "../../components/AdminPageHelp";
 import StatCard from "../../components/StatCard";
 import Link from "next/link";
 import TransactionDetailModal from "../../components/TransactionDetailModal";
+import { AdminTransactionsLive } from "./TransactionsLive";
 import { USE_MOCK_DATA } from "@/lib/config";
 import { MOCK_BRANCHES } from "@/lib/mock/branches";
 import type { KycStatus, MockMember } from "@/lib/mock/memberKyc";
@@ -33,6 +35,13 @@ function kycStatusShort(s: KycStatus, t: AdminTranslations): string {
 }
 
 export default function AdminTransactionsPage() {
+  if (!USE_MOCK_DATA) {
+    return <AdminTransactionsLive />;
+  }
+  return <AdminTransactionsMock />;
+}
+
+function AdminTransactionsMock() {
   const { t, locale } = useAdminLanguage();
   const p = t.pages.transactions;
   const s = t.screens.transactions;
@@ -44,12 +53,10 @@ export default function AdminTransactionsPage() {
   const [q, setQ] = useState("");
   const [branch, setBranch] = useState<string>("all");
   const [detailTxn, setDetailTxn] = useState<MockTxn | null>(null);
+  /** อ่านจาก localStorage — โหลดหลัง mount เพื่อไม่ให้ SSR กับ client ไม่ตรงกัน */
+  const [mockMemberTotal, setMockMemberTotal] = useState<number | null>(null);
 
   const load = useCallback(() => {
-    if (!USE_MOCK_DATA) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setRows(getTransactions());
     setLoading(false);
@@ -58,6 +65,10 @@ export default function AdminTransactionsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setMockMemberTotal(getMembers().length);
+  }, [rows]);
 
   const branchLabel = useCallback(
     (branchId: string) => {
@@ -107,8 +118,6 @@ export default function AdminTransactionsPage() {
     return { sumThb, uniq };
   }, [filtered]);
 
-  const members = getMembers();
-
   const exportCsv = () => {
     const header = [
       "created_at",
@@ -154,15 +163,6 @@ export default function AdminTransactionsPage() {
     ? memberById.get(detailTxn.member_id)
     : undefined;
 
-  if (!USE_MOCK_DATA) {
-    return (
-      <>
-        <Header title={p.titleDisabled} subtitle={p.subtitleDisabled} />
-        <div className="flex-1 p-6 text-sm text-muted">{s.disabledHint}</div>
-      </>
-    );
-  }
-
   return (
     <>
       <Header
@@ -189,6 +189,13 @@ export default function AdminTransactionsPage() {
         }
       />
       <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8 max-w-[1600px] w-full mx-auto">
+        <AdminPageHelp
+          idPrefix="transactions-mock"
+          title={p.helpTitle}
+          expandLabel={t.common.helpExpand}
+          collapseLabel={t.common.helpCollapse}
+          sections={p.helpSections}
+        />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard
             label={s.statSumThb}
@@ -372,13 +379,18 @@ export default function AdminTransactionsPage() {
               total: rows.length,
             })}
           </p>
-          <p>{fillTemplate(s.mockMemberCount, { count: members.length })}</p>
+          <p>
+            {mockMemberTotal !== null
+              ? fillTemplate(s.mockMemberCount, { count: mockMemberTotal })
+              : "—"}
+          </p>
         </div>
       </div>
 
       <TransactionDetailModal
         txn={detailTxn}
         member={detailMember}
+        liveMember={null}
         branchName={
           detailTxn ? branchLabel(detailTxn.branch_id) : s.branchUnknown
         }

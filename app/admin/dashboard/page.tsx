@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Header from "../components/Header";
+import AdminPageHelp from "../components/AdminPageHelp";
 import StatCard from "../components/StatCard";
 import TwemojiFlag from "../components/TwemojiFlag";
 import Link from "next/link";
@@ -91,6 +92,13 @@ export default function AdminDashboardPage() {
     <>
       <Header title={pg.title} subtitle={pg.subtitle} />
       <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto space-y-8 max-w-[1600px] w-full mx-auto">
+        <AdminPageHelp
+          idPrefix="dashboard"
+          title={pg.helpTitle}
+          expandLabel={t.common.helpExpand}
+          collapseLabel={t.common.helpCollapse}
+          sections={pg.helpSections}
+        />
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <p className="text-sm text-muted">{t.common.loadingData}</p>

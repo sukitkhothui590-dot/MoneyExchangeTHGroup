@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Header from "../../components/Header";
+import AdminPageHelp from "../../components/AdminPageHelp";
 import { CameraIcon, PencilIcon } from "@heroicons/react/24/outline";
 import type { Profile } from "@/lib/types/database";
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
@@ -79,8 +80,17 @@ export default function ProfilePage() {
     return (
       <>
         <Header title={p.title} subtitle={p.subtitle} />
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-muted">{t.common.loadingData}</p>
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          <AdminPageHelp
+            idPrefix="profile"
+            title={p.helpTitle}
+            expandLabel={t.common.helpExpand}
+            collapseLabel={t.common.helpCollapse}
+            sections={p.helpSections}
+          />
+          <div className="flex items-center justify-center py-12">
+            <p className="text-sm text-muted">{t.common.loadingData}</p>
+          </div>
         </div>
       </>
     );
@@ -90,6 +100,13 @@ export default function ProfilePage() {
     <>
       <Header title={p.title} subtitle={p.subtitle} />
       <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <AdminPageHelp
+          idPrefix="profile"
+          title={p.helpTitle}
+          expandLabel={t.common.helpExpand}
+          collapseLabel={t.common.helpCollapse}
+          sections={p.helpSections}
+        />
         <div className="max-w-xl">
           {/* Avatar */}
           <div className="bg-white border border-border rounded-xl p-5 mb-5">

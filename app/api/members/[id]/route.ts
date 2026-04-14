@@ -27,7 +27,15 @@ export async function GET(
       return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ data });
+    const { count } = await supabase
+      .from("pos_transactions")
+      .select("*", { count: "exact", head: true })
+      .eq("member_id", id)
+      .eq("status", "active");
+
+    return NextResponse.json({
+      data: { ...data, visit_count: count ?? 0 },
+    });
   } catch {
     return NextResponse.json(
       { error: "Internal server error" },

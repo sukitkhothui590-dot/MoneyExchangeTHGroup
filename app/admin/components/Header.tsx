@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronDownIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
   UserCircleIcon,
   ArrowRightStartOnRectangleIcon,
   Bars3Icon,
@@ -13,6 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/lib/hooks/useUser";
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
 import AdminLangSwitcher from "./AdminLangSwitcher";
+import { useAdminSidebarOptional } from "./AdminSidebarContext";
 
 interface HeaderProps {
   title: string;
@@ -24,6 +27,7 @@ export default function Header({ title, subtitle, actions }: HeaderProps) {
   const router = useRouter();
   const { profile } = useUser();
   const { t } = useAdminLanguage();
+  const sidebarCtx = useAdminSidebarOptional();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userRef = useRef<HTMLDivElement>(null);
 
@@ -49,8 +53,32 @@ export default function Header({ title, subtitle, actions }: HeaderProps) {
   return (
     <header className="sticky top-0 z-20 h-16 border-b border-border/80 bg-white/85 backdrop-blur-md backdrop-saturate-150 flex items-center justify-between px-4 sm:px-6 lg:px-8 flex-shrink-0 shadow-sm shadow-black/[0.03]">
       <div className="flex items-center gap-3 min-w-0">
+        {sidebarCtx ? (
+          <button
+            type="button"
+            onClick={sidebarCtx.toggleDesktopSidebar}
+            className="hidden lg:flex w-9 h-9 items-center justify-center rounded-xl text-muted hover:text-foreground hover:bg-surface-100/90 transition-colors cursor-pointer flex-shrink-0"
+            aria-label={
+              sidebarCtx.desktopCollapsed
+                ? t.sidebar.toggleShow
+                : t.sidebar.toggleHide
+            }
+            title={
+              sidebarCtx.desktopCollapsed
+                ? t.sidebar.toggleShow
+                : t.sidebar.toggleHide
+            }
+          >
+            {sidebarCtx.desktopCollapsed ? (
+              <ChevronDoubleRightIcon className="w-5 h-5" />
+            ) : (
+              <ChevronDoubleLeftIcon className="w-5 h-5" />
+            )}
+          </button>
+        ) : null}
         {/* Hamburger — mobile only */}
         <button
+          type="button"
           data-menu-toggle
           className="lg:hidden w-9 h-9 flex items-center justify-center rounded-xl text-muted hover:text-foreground hover:bg-surface-100/90 transition-colors cursor-pointer flex-shrink-0"
         >

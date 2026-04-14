@@ -1,0 +1,20 @@
+export type AdminPosTransactionRow = {
+  id: string;
+  created_at: string;
+  member_id: string;
+  member_name: string;
+  member_email: string;
+  member_phone: string;
+  member_wallet_balance: number;
+  member_verified: boolean;
+  currency_code: string;
+  amount: number;
+  rate: number;
+  total_thb: number;
+  status: "active" | "voided";
+  branch_id: string;
+  branch_name_th: string;
+  staff_user_id: string;
+  staff_display_name: string;
+  kyc_latest_status: "pending" | "verified" | "rejected" | null;
+};

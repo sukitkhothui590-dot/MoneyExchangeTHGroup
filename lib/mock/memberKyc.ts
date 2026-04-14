@@ -87,6 +87,7 @@ export function normalizeMockMember(
 ): MockMember {
   return {
     ...m,
+    identity_lookup_key: m.identity_lookup_key ?? null,
     kyc: mergeKyc(m.name, m.kyc),
   };
 }

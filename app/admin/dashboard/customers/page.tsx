@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Header from "../../components/Header";
+import AdminPageHelp from "../../components/AdminPageHelp";
 import type { Member } from "@/lib/types/database";
 import { USE_MOCK_DATA } from "@/lib/config";
 import {
@@ -12,8 +13,10 @@ import {
   setMembers as persistMembers,
 } from "@/lib/mock/store";
 import type { MemberKycProfile, MockMember } from "@/lib/mock/memberKyc";
+import { createDefaultKyc } from "@/lib/mock/memberKyc";
 import CustomerKycModal from "../../components/CustomerKycModal";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import CustomerDetailModal from "../../components/CustomerDetailModal";
+import { MagnifyingGlassIcon, EyeIcon } from "@heroicons/react/24/outline";
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
 import type { AdminTranslations } from "@/lib/admin/translations";
 import type { KycStatus, RiskTier } from "@/lib/mock/memberKyc";
@@ -42,18 +45,44 @@ export default function AdminCustomersPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [showCreate, setShowCreate] = useState(false);
   const [kycMemberId, setKycMemberId] = useState<string | null>(null);
+  const [detailMemberId, setDetailMemberId] = useState<string | null>(null);
   const [draft, setDraft] = useState({
     name: "",
     email: "",
     phone: "",
   });
 
-  const load = useCallback(() => {
-    if (!USE_MOCK_DATA) {
-      setLoading(false);
-      return;
+  const load = useCallback(async () => {
+    // Always try Supabase first, fallback to mock
+    try {
+      const res = await fetch("/api/admin/members");
+      if (res.ok) {
+        const json = await res.json();
+        const rows = (json.data ?? []) as Member[];
+        if (rows.length > 0 || !USE_MOCK_DATA) {
+          setMembers(
+            rows.map((m) => ({
+              ...m,
+              kyc: {
+                ...createDefaultKyc(m.name),
+                id_doc_number: m.identity_lookup_key ?? "",
+                kyc_status: m.verified
+                  ? ("approved" as const)
+                  : ("draft" as const),
+              },
+            })),
+          );
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      /* Supabase unavailable — fall through to mock */
     }
-    setMembers(getMembers());
+
+    if (USE_MOCK_DATA) {
+      setMembers(getMembers());
+    }
     setLoading(false);
   }, []);
 
@@ -73,8 +102,8 @@ export default function AdminCustomersPage() {
       m.name.toLowerCase().includes(q) ||
       m.email.toLowerCase().includes(q) ||
       m.phone.includes(search) ||
-      m.kyc.legal_name.toLowerCase().includes(q) ||
-      m.kyc.id_doc_number.toLowerCase().includes(q);
+      (m.kyc?.legal_name ?? "").toLowerCase().includes(q) ||
+      (m.kyc?.id_doc_number ?? "").toLowerCase().includes(q);
     const matchStatus = statusFilter === "all" || m.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -91,6 +120,7 @@ export default function AdminCustomersPage() {
       wallet_balance: 0,
       verified: false,
       created_at: new Date().toISOString(),
+      identity_lookup_key: null,
     };
     addMember(m);
     setMembers(getMembers());
@@ -98,11 +128,35 @@ export default function AdminCustomersPage() {
     setDraft({ name: "", email: "", phone: "" });
   };
 
-  const remove = (memberId: string) => {
-    if (!USE_MOCK_DATA) return;
+  const remove = async (memberId: string) => {
     if (!confirm(identity.confirmDelete)) return;
-    deleteMember(memberId);
-    setMembers(getMembers());
+
+    // Always try Supabase first
+    try {
+      const res = await fetch("/api/admin/members", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: memberId }),
+      });
+      if (res.ok) {
+        setMembers((prev) => prev.filter((m) => m.id !== memberId));
+        // Also remove from mock store if applicable
+        if (USE_MOCK_DATA) {
+          try { deleteMember(memberId); } catch { /* ignore */ }
+        }
+        return;
+      }
+      const json = await res.json().catch(() => ({ error: "Unknown error" }));
+      alert(`ลบไม่สำเร็จ: ${json.error}`);
+    } catch {
+      // API unreachable — fallback to mock
+      if (USE_MOCK_DATA) {
+        deleteMember(memberId);
+        setMembers(getMembers());
+        return;
+      }
+      alert("ลบไม่สำเร็จ — ไม่สามารถเชื่อมต่อ server");
+    }
   };
 
   const patchField = (id: string, patch: Partial<MockMember>) => {
@@ -115,21 +169,6 @@ export default function AdminCustomersPage() {
   const saveKyc = (id: string, kyc: MemberKycProfile) => {
     patchField(id, { kyc });
   };
-
-  if (!USE_MOCK_DATA) {
-    return (
-      <>
-        <Header title={p.titleDisabled} subtitle={p.subtitleDisabled} />
-        <div className="flex-1 p-6 text-sm text-muted">
-          {identity.disabledHintBefore}{" "}
-          <code className="text-foreground">
-            NEXT_PUBLIC_USE_MOCK_DATA=true
-          </code>{" "}
-          {identity.disabledHintAfter}
-        </div>
-      </>
-    );
-  }
 
   return (
     <>
@@ -147,6 +186,13 @@ export default function AdminCustomersPage() {
         }
       />
       <div className="flex-1 p-4 sm:p-6 lg:p-8">
+        <AdminPageHelp
+          idPrefix="customers"
+          title={p.helpTitle}
+          expandLabel={t.common.helpExpand}
+          collapseLabel={t.common.helpCollapse}
+          sections={p.helpSections}
+        />
         {loading ? (
           <p className="text-sm text-muted">{sh.loading}</p>
         ) : (
@@ -202,7 +248,10 @@ export default function AdminCustomersPage() {
                     <th className="text-right px-4 py-3 text-muted font-medium">
                       {identity.colWallet}
                     </th>
-                    <th className="text-center px-4 py-3 text-muted font-medium w-[100px]">
+                    <th className="text-center px-4 py-3 text-muted font-medium w-[80px]">
+                      ดูข้อมูล
+                    </th>
+                    <th className="text-center px-4 py-3 text-muted font-medium w-[80px]">
                       {identity.btnKyc}
                     </th>
                     <th className="text-center px-4 py-3 text-muted font-medium">
@@ -217,13 +266,14 @@ export default function AdminCustomersPage() {
                       className="border-b border-border last:border-0"
                     >
                       <td className="px-4 py-3">
-                        <input
-                          value={m.name}
-                          onChange={(e) =>
-                            patchField(m.id, { name: e.target.value })
-                          }
-                          className="w-full min-w-0 max-w-[200px] border border-transparent hover:border-border rounded px-2 py-1 text-sm"
-                        />
+                        <button
+                          type="button"
+                          onClick={() => setDetailMemberId(m.id)}
+                          className="text-sm text-brand hover:underline font-medium text-left truncate max-w-[200px] block"
+                          title={m.name}
+                        >
+                          {m.name || "ไม่ระบุชื่อ"}
+                        </button>
                       </td>
                       <td className="px-4 py-3">
                         <div className="space-y-1 max-w-[220px]">
@@ -291,6 +341,16 @@ export default function AdminCustomersPage() {
                       <td className="px-4 py-3 text-center">
                         <button
                           type="button"
+                          onClick={() => setDetailMemberId(m.id)}
+                          className="text-xs font-medium text-brand border border-brand/30 rounded-lg px-2 py-1 hover:bg-brand-subtle inline-flex items-center gap-1"
+                        >
+                          <EyeIcon className="w-3.5 h-3.5" />
+                          ดู
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          type="button"
                           onClick={() => setKycMemberId(m.id)}
                           className="text-xs font-medium text-brand border border-brand/30 rounded-lg px-2 py-1 hover:bg-brand-subtle"
                         >
@@ -314,6 +374,12 @@ export default function AdminCustomersPage() {
           </>
         )}
       </div>
+
+      <CustomerDetailModal
+        memberId={detailMemberId}
+        isOpen={!!detailMemberId}
+        onClose={() => setDetailMemberId(null)}
+      />
 
       <CustomerKycModal
         member={

@@ -53,6 +53,7 @@ const seedMembers: MockMember[] = [
     wallet_balance: 5000,
     verified: true,
     created_at: new Date().toISOString(),
+    identity_lookup_key: null,
     kyc: {
       legal_name: "สมชาย ใจดี",
       date_of_birth: "1990-05-15",
@@ -89,6 +90,7 @@ const seedMembers: MockMember[] = [
     wallet_balance: 0,
     verified: false,
     created_at: new Date().toISOString(),
+    identity_lookup_key: null,
     kyc: {
       legal_name: "Jane Doe",
       date_of_birth: "1988-03-20",
@@ -330,22 +332,7 @@ export function newMockId(): string {
     : `id_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 }
 
-/** รหัสอ้างอิงการจองสำหรับยืนยันกับพนักงาน */
-export function newBookingReference(): string {
-  const d = new Date();
-  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
-  let suffix = "";
-  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-    const buf = new Uint8Array(4);
-    crypto.getRandomValues(buf);
-    suffix = Array.from(buf, (b) => b.toString(16).padStart(2, "0"))
-      .join("")
-      .toUpperCase();
-  } else {
-    suffix = Math.random().toString(36).slice(2, 10).toUpperCase();
-  }
-  return `MXTH-${ymd}-${suffix}`;
-}
+export { newBookingReference } from "@/lib/book/bookingReference";
 
 function transactionsKeyForUser(userId: string) {
   return `transactions_uid_${userId}`;

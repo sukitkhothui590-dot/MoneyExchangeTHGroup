@@ -15,6 +15,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
+    const q = searchParams.get("q")?.trim();
 
     let query = supabase
       .from("members")
@@ -23,6 +24,19 @@ export async function GET(request: Request) {
 
     if (status) {
       query = query.eq("status", status as "active" | "suspended" | "banned");
+    }
+
+    if (q && q.length > 0) {
+      const esc = q.replace(/%/g, "\\%").replace(/,/g, "");
+      const uuidRe =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (uuidRe.test(q)) {
+        query = query.eq("id", q);
+      } else {
+        query = query.or(
+          `phone.ilike.%${esc}%,email.ilike.%${esc}%,name.ilike.%${esc}%,identity_lookup_key.ilike.%${esc}%`,
+        );
+      }
     }
 
     const { data, error } = await query;

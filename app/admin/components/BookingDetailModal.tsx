@@ -28,6 +28,7 @@ const statusStyles: Record<BookingStatus, string> = {
 };
 
 const nextStatus: Partial<Record<BookingStatus, BookingStatus>> = {
+  pending_payment: "pending_review",
   pending_review: "approved",
   approved: "completed",
 };
@@ -128,6 +129,16 @@ export default function BookingDetailModal({
 
         {/* Info Grid */}
         <div className="grid grid-cols-2 gap-3 mb-5">
+          {booking.confirmation_code ? (
+            <div className="bg-surface rounded-lg p-3 col-span-2">
+              <p className="text-xs text-muted mb-0.5">
+                รหัสยืนยัน (แสดงให้พนักงาน)
+              </p>
+              <p className="text-sm font-mono font-semibold text-brand">
+                {booking.confirmation_code}
+              </p>
+            </div>
+          ) : null}
           <div className="bg-surface rounded-lg p-3">
             <p className="text-xs text-muted mb-0.5">{m.lblBookingId}</p>
             <p className="text-sm font-mono font-semibold text-foreground">
@@ -218,7 +229,9 @@ export default function BookingDetailModal({
                 {m.qrTitle}
               </p>
               <p className="text-xs text-muted mt-0.5">{m.qrHint}</p>
-              <p className="text-xs font-mono text-brand mt-1">{booking.id}</p>
+              <p className="text-xs font-mono text-brand mt-1">
+                {booking.confirmation_code || booking.id}
+              </p>
             </div>
           </div>
         )}
@@ -260,7 +273,12 @@ export default function BookingDetailModal({
               onClick={handleAdvance}
               className="flex-1 h-10 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark transition-colors cursor-pointer inline-flex items-center justify-center gap-2"
             >
-              {next === "approved" ? (
+              {booking.status === "pending_payment" ? (
+                <>
+                  <CheckCircleIcon className="w-4 h-4" />
+                  {m.advanceFromPayment}
+                </>
+              ) : next === "approved" ? (
                 <>
                   <CheckCircleIcon className="w-4 h-4" />
                   {m.approveBooking}

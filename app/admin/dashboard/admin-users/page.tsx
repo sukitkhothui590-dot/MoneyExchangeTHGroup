@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Header from "../../components/Header";
+import AdminPageHelp from "../../components/AdminPageHelp";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -10,6 +11,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
+import type { Branch } from "@/lib/types/database";
 
 interface AdminUser {
   id: string;
@@ -21,6 +23,7 @@ interface AdminUser {
   created_at: string;
   last_sign_in_at: string | null;
   email_confirmed: boolean;
+  branch_ids: string[];
 }
 
 interface FormState {
@@ -28,6 +31,8 @@ interface FormState {
   email: string;
   password: string;
   confirmPassword: string;
+  role: "admin" | "staff";
+  staffBranchIds: string[];
 }
 
 interface ResetState {
@@ -49,12 +54,20 @@ export default function AdminUsersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
+  const [allBranches, setAllBranches] = useState<Branch[]>([]);
   const [form, setForm] = useState<FormState>({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
+    role: "admin",
+    staffBranchIds: [],
   });
+
+  const [branchEditUser, setBranchEditUser] = useState<AdminUser | null>(null);
+  const [branchEditIds, setBranchEditIds] = useState<string[]>([]);
+  const [branchEditSaving, setBranchEditSaving] = useState(false);
+  const [branchEditError, setBranchEditError] = useState("");
 
   // Reset password modal
   const [resetState, setResetState] = useState<ResetState | null>(null);
@@ -86,6 +99,16 @@ export default function AdminUsersPage() {
     fetchUsers();
   }, [fetchUsers]);
 
+  useEffect(() => {
+    void (async () => {
+      const res = await fetch("/api/branches");
+      if (res.ok) {
+        const json = await res.json();
+        setAllBranches((json.data ?? []) as Branch[]);
+      }
+    })();
+  }, []);
+
   const filtered = users.filter(
     (u) =>
       u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -94,7 +117,15 @@ export default function AdminUsersPage() {
 
   // ── Add user ──────────────────────────────────────────────────────────────
   const openAddModal = () => {
-    setForm({ name: "", email: "", password: "", confirmPassword: "" });
+    const first = allBranches[0]?.id;
+    setForm({
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      role: "admin",
+      staffBranchIds: first ? [first] : [],
+    });
     setAddError("");
     setShowAddModal(true);
   };
@@ -111,6 +142,10 @@ export default function AdminUsersPage() {
       setAddError("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
       return;
     }
+    if (form.role === "staff" && form.staffBranchIds.length === 0) {
+      setAddError("เลือกอย่างน้อยหนึ่งสาขาสำหรับพนักงาน POS");
+      return;
+    }
 
     setAdding(true);
     try {
@@ -121,6 +156,8 @@ export default function AdminUsersPage() {
           name: form.name,
           email: form.email,
           password: form.password,
+          role: form.role,
+          branch_ids: form.role === "staff" ? form.staffBranchIds : undefined,
         }),
       });
       const json = await res.json();
@@ -183,6 +220,33 @@ export default function AdminUsersPage() {
   };
 
   // ── Delete user ───────────────────────────────────────────────────────────
+  const saveBranchAssignments = async () => {
+    if (!branchEditUser || branchEditIds.length === 0) {
+      setBranchEditError("เลือกอย่างน้อยหนึ่งสาขา");
+      return;
+    }
+    setBranchEditSaving(true);
+    setBranchEditError("");
+    try {
+      const res = await fetch(`/api/admin-users/${branchEditUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branch_ids: branchEditIds }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setBranchEditError(json.error ?? "บันทึกไม่สำเร็จ");
+        return;
+      }
+      setBranchEditUser(null);
+      fetchUsers();
+    } catch {
+      setBranchEditError("เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
+    } finally {
+      setBranchEditSaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -218,6 +282,13 @@ export default function AdminUsersPage() {
       <Header title={p.title} subtitle={p.subtitle} />
 
       <div className="flex-1 p-4 sm:p-6 lg:p-8">
+        <AdminPageHelp
+          idPrefix="admin-users"
+          title={p.helpTitle}
+          expandLabel={t.common.helpExpand}
+          collapseLabel={t.common.helpCollapse}
+          sections={p.helpSections}
+        />
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
           <div className="relative w-full max-w-xs">
@@ -255,7 +326,7 @@ export default function AdminUsersPage() {
                     ชื่อ / อีเมล
                   </th>
                   <th className="text-left px-5 py-3 font-medium text-muted">
-                    สิทธิ์
+                    สิทธิ์ / สาขา
                   </th>
                   <th className="text-left px-5 py-3 font-medium text-muted">
                     เข้าสู่ระบบล่าสุด
@@ -310,6 +381,13 @@ export default function AdminUsersPage() {
                         <span className="text-xs font-medium px-2 py-0.5 rounded-full border bg-brand-subtle text-brand border-brand/20">
                           {u.role}
                         </span>
+                        {u.role === "staff" ? (
+                          <p className="text-[11px] text-muted mt-1 max-w-[200px]">
+                            {u.branch_ids?.length
+                              ? `${u.branch_ids.length} สาขา`
+                              : "ยังไม่มีสาขา"}
+                          </p>
+                        ) : null}
                       </td>
                       <td className="px-5 py-3.5 text-muted text-xs">
                         {formatDate(u.last_sign_in_at)}
@@ -319,6 +397,20 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center justify-center gap-2">
+                          {u.role === "staff" ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBranchEditUser(u);
+                                setBranchEditIds([...(u.branch_ids ?? [])]);
+                                setBranchEditError("");
+                              }}
+                              title="มอบหมายสาขา"
+                              className="w-8 h-8 flex items-center justify-center rounded-lg border border-border text-muted hover:text-brand hover:border-brand transition-colors cursor-pointer text-[10px] font-semibold"
+                            >
+                              สาขา
+                            </button>
+                          ) : null}
                           <button
                             onClick={() => openReset(u)}
                             title="รีเซ็ตรหัสผ่าน"
@@ -353,8 +445,8 @@ export default function AdminUsersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="relative bg-white border border-border rounded-2xl w-full max-w-md mx-4 p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold text-foreground">
-                เพิ่มผู้ดูแลระบบใหม่
+                <h2 className="text-base font-semibold text-foreground">
+                เพิ่มบัญชีพนักงาน / แอดมิน
               </h2>
               <button
                 onClick={() => setShowAddModal(false)}
@@ -395,6 +487,75 @@ export default function AdminUsersPage() {
                   className="w-full h-10 px-3.5 rounded-lg border border-border bg-white text-sm text-foreground placeholder:text-muted/40 transition-colors hover:border-border-strong focus:border-brand outline-none"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">
+                  บทบาท
+                </label>
+                <select
+                  value={form.role}
+                  onChange={(e) => {
+                    const role = e.target.value === "staff" ? "staff" : "admin";
+                    setForm((f) => ({
+                      ...f,
+                      role,
+                      staffBranchIds:
+                        role === "staff"
+                          ? f.staffBranchIds.length > 0
+                            ? f.staffBranchIds
+                            : allBranches[0]?.id
+                              ? [allBranches[0].id]
+                              : []
+                          : [],
+                    }));
+                  }}
+                  className="w-full h-10 px-3.5 rounded-lg border border-border bg-white text-sm text-foreground transition-colors hover:border-border-strong focus:border-brand outline-none"
+                >
+                  <option value="admin">แอดมิน (เต็ม)</option>
+                  <option value="staff">พนักงาน POS</option>
+                </select>
+                <p className="text-xs text-muted mt-1">
+                  พนักงานเข้าได้เฉพาะ /pos ไม่เข้าแผงแอดมิน — ต้องมอบหมายสาขาอย่างน้อย 1 สาขา
+                </p>
+              </div>
+
+              {form.role === "staff" ? (
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                    สาขาที่ใช้ได้ <span className="text-danger">*</span>
+                  </label>
+                  <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-surface/40 px-3 py-2 space-y-2">
+                    {allBranches.filter((b) => b.status === "active").length ===
+                    0 ? (
+                      <p className="text-xs text-muted">ไม่มีสาขาในระบบ</p>
+                    ) : (
+                      allBranches
+                        .filter((b) => b.status === "active")
+                        .map((b) => (
+                          <label
+                            key={b.id}
+                            className="flex items-center gap-2 text-sm cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={form.staffBranchIds.includes(b.id)}
+                              onChange={(e) => {
+                                setForm((f) => {
+                                  const next = e.target.checked
+                                    ? [...f.staffBranchIds, b.id]
+                                    : f.staffBranchIds.filter((x) => x !== b.id);
+                                  return { ...f, staffBranchIds: next };
+                                });
+                              }}
+                              className="rounded border-border"
+                            />
+                            <span>{b.name_th}</span>
+                          </label>
+                        ))
+                    )}
+                  </div>
+                </div>
+              ) : null}
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">
@@ -451,6 +612,79 @@ export default function AdminUsersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Staff branch assignments ───────────────────────────────── */}
+      {branchEditUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="relative bg-white border border-border rounded-2xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-base font-semibold text-foreground">
+                  มอบหมายสาขา (พนักงาน POS)
+                </h2>
+                <p className="text-xs text-muted mt-0.5">
+                  {branchEditUser.name || branchEditUser.email}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBranchEditUser(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:text-foreground hover:bg-surface transition-colors cursor-pointer"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-2 max-h-56 overflow-y-auto rounded-lg border border-border bg-surface/40 px-3 py-2 mb-4">
+              {allBranches
+                .filter((b) => b.status === "active")
+                .map((b) => (
+                  <label
+                    key={b.id}
+                    className="flex items-center gap-2 text-sm cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={branchEditIds.includes(b.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setBranchEditIds((ids) => [...ids, b.id]);
+                        } else {
+                          setBranchEditIds((ids) =>
+                            ids.filter((x) => x !== b.id),
+                          );
+                        }
+                      }}
+                      className="rounded border-border"
+                    />
+                    <span>{b.name_th}</span>
+                  </label>
+                ))}
+            </div>
+            {branchEditError ? (
+              <p className="text-xs text-danger bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+                {branchEditError}
+              </p>
+            ) : null}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setBranchEditUser(null)}
+                className="flex-1 h-10 rounded-lg border border-border text-sm font-medium text-muted hover:text-foreground hover:bg-surface transition-colors cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                disabled={branchEditSaving}
+                onClick={() => void saveBranchAssignments()}
+                className="flex-1 h-10 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand/90 transition-colors cursor-pointer disabled:opacity-60"
+              >
+                {branchEditSaving ? "กำลังบันทึก..." : "บันทึก"}
+              </button>
+            </div>
           </div>
         </div>
       )}

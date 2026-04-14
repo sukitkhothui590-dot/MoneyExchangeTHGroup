@@ -119,12 +119,35 @@ button:focus-visible {
   outline-offset: 1px;
 }
 
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* ซ่อนแถบเลื่อน แต่ยังเลื่อนได้ (Firefox / IE legacy) */
+.scrollbar-hide,
+.no-scrollbar,
+[data-scroll-no-scrollbar="true"] {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+/* WebKit (Chrome, Edge, Safari) — ต้องซ่อนที่ pseudo-element */
+.scrollbar-hide::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar,
+[data-scroll-no-scrollbar="true"]::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* หน้าบ้าน (route group site): ซ่อน scrollbar ที่ viewport — ยังเลื่อนได้ */
+html.site-scrollbar-hidden,
+body.site-scrollbar-hidden {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+html.site-scrollbar-hidden::-webkit-scrollbar,
+body.site-scrollbar-hidden::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
 
 @utility focus-ring {
@@ -233,4 +256,71 @@ button:focus-visible {
   .admin-card-lift:hover {
     transform: none;
   }
+}
+
+/* POS — พื้นหลังขาว/ฟ้าอ่อน + น้ำเงินเป็นสีเน้น (ไม่ผูกกับ --site-accent เว็บหลัก) */
+.pos-saas-shell {
+  --pos-accent: #2563eb;
+  --pos-accent-hover: #1d4ed8;
+  --pos-accent-muted: color-mix(in srgb, var(--pos-accent) 10%, white);
+  --pos-accent-soft: color-mix(in srgb, var(--pos-accent) 12%, white);
+  --pos-accent-border: color-mix(in srgb, var(--pos-accent) 20%, transparent);
+  --pos-canvas: #f5f8ff;
+  --pos-card-border: color-mix(in srgb, var(--pos-accent) 9%, transparent);
+
+  background-color: var(--pos-canvas);
+  background-image:
+    radial-gradient(
+      ellipse 120% 90% at 0% 0%,
+      color-mix(in srgb, var(--pos-accent) 7%, transparent) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 80% 50% at 100% 0%,
+      color-mix(in srgb, var(--pos-accent) 4%, transparent) 0%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--pos-accent) 3.5%, transparent) 1px,
+      transparent 0
+    );
+  background-size: auto, auto, 20px 20px;
+}
+
+/* ซ่อน scrollbar ทุกพื้นที่เลื่อนได้ใน POS — เลื่อนเมาส์/ทัช/คีย์บอร์ดยังใช้ได้ */
+.pos-saas-shell,
+.pos-saas-shell * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.pos-saas-shell::-webkit-scrollbar,
+.pos-saas-shell *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* ทับ focus outline สีแดงจาก :root (--site-accent) ให้ใช้โทน POS */
+.pos-saas-shell input:focus,
+.pos-saas-shell select:focus,
+.pos-saas-shell textarea:focus,
+.pos-saas-shell button:focus-visible {
+  outline: 2px solid var(--pos-accent);
+  outline-offset: 1px;
+}
+
+.pos-sidebar-nav-active {
+  background-color: var(--pos-accent-soft);
+  color: var(--pos-accent);
+  border: 1px solid var(--pos-accent-border);
+}
+
+.pos-card-saas {
+  background: #ffffff;
+  border: 1px solid var(--pos-card-border);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--pos-accent) 5%, transparent),
+    0 1px 3px color-mix(in srgb, var(--foreground) 4%, transparent);
 }

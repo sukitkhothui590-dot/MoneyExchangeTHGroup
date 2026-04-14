@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import SiteImage from "@/components/site/SiteImage";
 import { EnvelopeIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import { createClient } from "@/lib/supabase/client";
-import { SITE_LOGO_SRC } from "@/lib/siteLogo";
+import { SITE_LOGO_ON_DARK_CLASS, SITE_LOGO_SRC } from "@/lib/siteLogo";
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
 import AdminLangSwitcher from "../components/AdminLangSwitcher";
+import AdminPageHelp from "../components/AdminPageHelp";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -55,15 +56,26 @@ export default function AdminLoginPage() {
 
       <div className="w-full max-w-[380px]">
         <div className="flex justify-center mb-10">
-          <SiteImage
-            src={SITE_LOGO_SRC}
-            alt="MoneyExchangeTHGroup"
-            width={180}
-            height={56}
-            className="object-contain max-h-14 w-auto"
-            bypassPlaceholder
-          />
+          <div className="rounded-2xl bg-brand px-8 py-4 shadow-md shadow-brand/25">
+            <SiteImage
+              src={SITE_LOGO_SRC}
+              alt="MoneyExchangeTHGroup"
+              width={180}
+              height={56}
+              className={`object-contain max-h-14 w-auto ${SITE_LOGO_ON_DARK_CLASS}`}
+              bypassPlaceholder
+            />
+          </div>
         </div>
+
+        <AdminPageHelp
+          idPrefix="admin-login"
+          title={t.login.helpTitle}
+          expandLabel={t.common.helpExpand}
+          collapseLabel={t.common.helpCollapse}
+          sections={t.login.helpSections}
+          className="mb-4"
+        />
 
         <div className="bg-white border border-border rounded-2xl overflow-hidden">
           <div className="h-1 bg-brand" />

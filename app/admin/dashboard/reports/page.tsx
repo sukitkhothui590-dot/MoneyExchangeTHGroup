@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { AdminReportsLive } from "./ReportsLive";
 import Header from "../../components/Header";
+import AdminPageHelp from "../../components/AdminPageHelp";
 import ReportSectionCard from "../../components/ReportSectionCard";
 import ReportsChartsPanel from "../../components/reports/ReportsChartsPanel";
 import ReportsMetricCard from "../../components/ReportsMetricCard";
@@ -72,6 +74,13 @@ function CountHero({ value }: { value: number }) {
 }
 
 export default function AdminReportsPage() {
+  if (!USE_MOCK_DATA) {
+    return <AdminReportsLive />;
+  }
+  return <AdminReportsMock />;
+}
+
+function AdminReportsMock() {
   const { t, locale } = useAdminLanguage();
   const p = t.pages.reports;
   const r = t.screens.reports;
@@ -148,20 +157,18 @@ export default function AdminReportsPage() {
   const tableWrapClass =
     "overflow-x-auto [&_thead_tr]:border-b [&_thead_tr]:border-border/60 [&_tbody_tr]:border-b [&_tbody_tr]:border-border/40 [&_tbody_tr:last-child]:border-0";
 
-  if (!USE_MOCK_DATA) {
-    return (
-      <>
-        <Header title={p.titleDisabled} subtitle={p.subtitleDisabled} />
-        <div className="flex-1 p-6 text-sm text-muted">{r.disabledHint}</div>
-      </>
-    );
-  }
-
   return (
     <>
       <Header title={p.title} subtitle={p.subtitle} />
       <div className="flex-1 space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-6">
+          <AdminPageHelp
+            idPrefix="reports-mock"
+            title={p.helpTitle}
+            expandLabel={t.common.helpExpand}
+            collapseLabel={t.common.helpCollapse}
+            sections={p.helpSections}
+          />
           {/* Toolbar — สไตล์แดชบอร์ดอ้างอิง */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-3">
