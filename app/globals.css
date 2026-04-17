@@ -201,7 +201,7 @@ body.site-scrollbar-hidden::-webkit-scrollbar {
 /* Longhands: avoids shorthand parse issues; duration tuned so motion is visible */
 .animate-rate-marquee {
   animation-name: rate-marquee;
-  animation-duration: 28s;
+  animation-duration: 120s;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   will-change: transform;
@@ -209,7 +209,7 @@ body.site-scrollbar-hidden::-webkit-scrollbar {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-rate-marquee {
-    animation-duration: 80s;
+    animation-duration: 130s;
   }
 }
 

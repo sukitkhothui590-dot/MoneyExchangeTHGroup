@@ -7,6 +7,8 @@ import {
   Bars3Icon,
   BanknotesIcon,
   ChartBarIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
   ClockIcon,
   HomeModernIcon,
   IdentificationIcon,
@@ -73,7 +75,11 @@ function headingFor(p: string) {
     },
     "/pos/queue": { b: ["งานหน้าร้าน", "คิว"], t: "คิว / การจอง", s: "รายการของสาขาที่เลือก เรียงล่าสุดก่อน" },
     "/pos/history": { b: ["รายงาน", "ประวัติ"], t: "ประวัติธุรกรรม", s: "ธุรกรรม POS ตามสาขา" },
-    "/pos/reports": { b: ["รายงาน", "สรุป"], t: "รายงานสรุป", s: "ยอดรวมตามสกุลเงิน" },
+    "/pos/reports": {
+      b: ["รายงาน", "สรุป"],
+      t: "รายงานสรุป",
+      s: "ยอดรวมตามสกุลเงิน · แจ้งปัญหาสาขา",
+    },
   };
   return m[p] ?? { b: ["POS"], t: "POS", s: "" };
 }
@@ -99,6 +105,8 @@ export function PosChrome({ children }: { children: React.ReactNode }) {
     [posAccess?.role],
   );
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+  const [sidebarPrefsReady, setSidebarPrefsReady] = useState(false);
   const [online, setOnline] = useState(true);
   const [incomingCount, setIncomingCount] = useState(0);
   const [notifyEnabled, setNotifyEnabled] = useState(true);
@@ -250,6 +258,28 @@ export function PosChrome({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    try {
+      const c = window.localStorage.getItem("pos_sidebar_desktop_collapsed");
+      setDesktopCollapsed(c === "1");
+    } catch {
+      /* ignore */
+    }
+    setSidebarPrefsReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!sidebarPrefsReady) return;
+    try {
+      window.localStorage.setItem(
+        "pos_sidebar_desktop_collapsed",
+        desktopCollapsed ? "1" : "0",
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [desktopCollapsed, sidebarPrefsReady]);
+
+  useEffect(() => {
     if (!prefsHydrated) return;
     try {
       window.localStorage.setItem(
@@ -289,27 +319,48 @@ export function PosChrome({ children }: { children: React.ReactNode }) {
 
   if (hideChrome) return <>{children}</>;
 
-  const NavInner = ({ onNavigate }: { onNavigate?: () => void }) => (
+  const NavInner = ({
+    collapsed = false,
+    onNavigate,
+  }: {
+    collapsed?: boolean;
+    onNavigate?: () => void;
+  }) => (
     <>
-      <div className="px-4 pt-6 pb-4 border-b border-white/15 shrink-0">
+      <div
+        className={[
+          "border-b border-white/15 shrink-0",
+          collapsed ? "px-2 pt-4 pb-3" : "px-4 pt-6 pb-4",
+        ].join(" ")}
+      >
         <Link
           href="/pos/dashboard"
           onClick={onNavigate}
-          className="flex items-center gap-2 min-w-0"
+          title={collapsed ? "แดชบอร์ด" : undefined}
+          className={[
+            "flex min-w-0",
+            collapsed ? "flex-col items-center justify-center gap-0" : "items-center gap-2",
+          ].join(" ")}
         >
           <div className="h-9 w-9 rounded-lg bg-white text-blue-900 flex items-center justify-center text-xs font-bold shrink-0 shadow-sm shadow-black/10">
             POS
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-white truncate">Money Exchange</p>
-            <p className="text-[11px] text-blue-200/90 truncate">เคาน์เตอร์</p>
-          </div>
+          {!collapsed ? (
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white truncate">Money Exchange</p>
+              <p className="text-[11px] text-blue-200/90 truncate">เคาน์เตอร์</p>
+            </div>
+          ) : null}
         </Link>
       </div>
       <nav className="flex-1 min-h-0 overflow-y-auto px-2 py-4 space-y-1">
-        <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-blue-300/90">
-          เมนูหลัก
-        </p>
+        {!collapsed ? (
+          <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-blue-300/90">
+            เมนูหลัก
+          </p>
+        ) : (
+          <div className="h-px w-8 mx-auto mb-2 bg-white/15 rounded-full" aria-hidden />
+        )}
         {navLinks.map(({ href, label, Icon }) => {
           const isActive =
             href === "/pos/dashboard"
@@ -319,45 +370,80 @@ export function PosChrome({ children }: { children: React.ReactNode }) {
             <Link
               key={href}
               href={href}
+              title={collapsed ? label : undefined}
               onClick={onNavigate}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={[
+                "flex items-center rounded-lg text-sm font-medium transition-colors",
+                collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5",
                 isActive
                   ? "bg-white text-blue-900 border border-white shadow-md shadow-black/10"
-                  : "text-blue-100/95 hover:bg-white hover:text-blue-900 border border-transparent"
-              }`}
+                  : "text-blue-100/95 hover:bg-white hover:text-blue-900 border border-transparent",
+              ].join(" ")}
             >
               <Icon className="h-5 w-5 shrink-0 opacity-90" />
-              {label}
+              {!collapsed ? label : null}
             </Link>
           );
         })}
       </nav>
-      <div className="p-3 border-t border-white/15 shrink-0">
-        <div className="flex items-center gap-3 rounded-xl border border-slate-200/90 bg-white shadow-sm p-2.5">
-          <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-800 shrink-0">
-            {(greetName[0] ?? "?").toUpperCase()}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-slate-900 truncate">{greetName}</p>
-            <p className="text-[10px] text-slate-500 truncate">{userEmail}</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => void logout()}
-          className="mt-2 w-full flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium text-white border border-white/35 hover:bg-white/10 transition-colors"
-        >
-          <ArrowRightOnRectangleIcon className="h-4 w-4" />
-          ออกจากระบบ
-        </button>
+      <div
+        className={[
+          "border-t border-white/15 shrink-0",
+          collapsed ? "p-2 flex flex-col items-center gap-2" : "p-3",
+        ].join(" ")}
+      >
+        {!collapsed ? (
+          <>
+            <div className="flex items-center gap-3 rounded-xl border border-slate-200/90 bg-white shadow-sm p-2.5">
+              <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-800 shrink-0">
+                {(greetName[0] ?? "?").toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-slate-900 truncate">{greetName}</p>
+                <p className="text-[10px] text-slate-500 truncate">{userEmail}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="mt-2 w-full flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium text-white border border-white/35 hover:bg-white/10 transition-colors"
+            >
+              <ArrowRightOnRectangleIcon className="h-4 w-4" />
+              ออกจากระบบ
+            </button>
+          </>
+        ) : (
+          <>
+            <div
+              className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-800 shrink-0"
+              title={greetName}
+            >
+              {(greetName[0] ?? "?").toUpperCase()}
+            </div>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              title="ออกจากระบบ"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-white border border-white/35 hover:bg-white/10 transition-colors"
+              aria-label="ออกจากระบบ"
+            >
+              <ArrowRightOnRectangleIcon className="h-5 w-5" />
+            </button>
+          </>
+        )}
       </div>
     </>
   );
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden w-full">
-      <aside className="hidden lg:flex w-[260px] shrink-0 h-full min-h-0 flex-col border-r border-blue-950/50 bg-blue-900 shadow-[4px_0_24px_-8px_rgba(0,0,0,0.35)]">
-        <NavInner />
+      <aside
+        className={[
+          "hidden lg:flex shrink-0 h-full min-h-0 flex-col border-r border-blue-950/50 bg-blue-900 shadow-[4px_0_24px_-8px_rgba(0,0,0,0.35)] transition-[width] duration-200 ease-out overflow-hidden",
+          desktopCollapsed ? "w-16" : "w-[260px]",
+        ].join(" ")}
+      >
+        <NavInner collapsed={desktopCollapsed} />
       </aside>
       <div
         className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-200 ${
@@ -406,6 +492,19 @@ export function PosChrome({ children }: { children: React.ReactNode }) {
             aria-label="เปิดเมนู"
           >
             <Bars3Icon className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            className="hidden lg:flex w-9 h-9 items-center justify-center rounded-xl text-slate-600 hover:text-blue-900 hover:bg-blue-50 shrink-0 -ml-1"
+            onClick={() => setDesktopCollapsed((v) => !v)}
+            aria-label={desktopCollapsed ? "ขยายเมนูด้านข้าง" : "ย่อเมนูด้านข้าง (แสดงไอคอน)"}
+            title={desktopCollapsed ? "ขยายเมนู" : "ย่อเป็นไอคอน"}
+          >
+            {desktopCollapsed ? (
+              <ChevronDoubleRightIcon className="w-5 h-5" />
+            ) : (
+              <ChevronDoubleLeftIcon className="w-5 h-5" />
+            )}
           </button>
           <div className="min-w-0 flex-1 basis-[min(100%,12rem)]">
             <p className="text-[11px] text-blue-600/80 truncate">{h.b.join(" / ")}</p>

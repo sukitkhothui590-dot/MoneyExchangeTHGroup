@@ -8,6 +8,7 @@ import {
   KeyIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
+  ArrowLeftIcon,
   ArrowPathIcon,
   PencilIcon,
 } from "@heroicons/react/24/outline";
@@ -17,6 +18,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -76,12 +78,16 @@ export default function PosIdentityPage() {
   const greet = userDisplayName?.trim() || userEmail?.split("@")[0] || "พนักงาน";
   const phoneCountryOptions = useMemo(() => getPhoneCountryOptions(), []);
 
+  /** ยกเลิก OCR / lookup ที่ค้าง — เพิ่มเมื่อเริ่มรอบใหม่หรือ reset */
+  const flowSessionRef = useRef(0);
+
   useEffect(() => {
     if (ready && !userEmail) router.replace("/pos/login");
   }, [ready, userEmail, router]);
 
   // ── Camera capture → multi-pass OCR ──────────────────────────
   const runOcr = useCallback(async (img: CapturedImage) => {
+    const runId = ++flowSessionRef.current;
     setCapturedImg(img);
     setStep("processing");
     setOcrProgress(0);
@@ -96,9 +102,12 @@ export default function PosIdentityPage() {
     try {
       const { multiPassOcr } = await import("@/lib/identity/ocrEngine");
       const result = await multiPassOcr(img.dataUrl, (pct, label) => {
+        if (flowSessionRef.current !== runId) return;
         setOcrProgress(pct);
         setOcrPassLabel(label);
       });
+
+      if (runId !== flowSessionRef.current) return;
 
       setOcrRawText(result.bestRawText);
       setOcrEditText(result.bestRawText);
@@ -108,6 +117,7 @@ export default function PosIdentityPage() {
         setIdResolved(result.bestMatch);
         setIdEnrollName(result.bestMatch.fullName);
         await lookupWithResolved(result.bestMatch, result.bestRawText);
+        if (runId !== flowSessionRef.current) return;
       } else if (result.bestRawText) {
         setStep("review");
         setErrorMsg(
@@ -120,6 +130,7 @@ export default function PosIdentityPage() {
         );
       }
     } catch (e) {
+      if (runId !== flowSessionRef.current) return;
       setStep("input");
       setErrorMsg(`OCR ล้มเหลว: ${e instanceof Error ? e.message : "unknown"}`);
     }
@@ -127,6 +138,7 @@ export default function PosIdentityPage() {
 
   // ── Lookup identity (from any source) ────────────────────────
   const lookupIdentity = async (payload: Record<string, string>) => {
+    const opId = flowSessionRef.current;
     setIdScanLoading(true);
     setDoneMsg("");
     setErrorMsg("");
@@ -142,6 +154,7 @@ export default function PosIdentityPage() {
       const json = await res.json();
       console.log("[identity-page] scan response:", res.status, json);
       if (!res.ok) {
+        if (opId !== flowSessionRef.current) return;
         setErrorMsg(json.error ?? "ค้นหาไม่สำเร็จ");
         return;
       }
@@ -154,6 +167,7 @@ export default function PosIdentityPage() {
       if (d._debug) {
         console.log("[identity-page] debug info:", d._debug);
       }
+      if (opId !== flowSessionRef.current) return;
       if (d.status === "member_found" && d.member) {
         setMember(d.member);
         setIdResolved(null);
@@ -171,9 +185,12 @@ export default function PosIdentityPage() {
       }
     } catch (e) {
       console.error("[identity-page] lookupIdentity error:", e);
+      if (opId !== flowSessionRef.current) return;
       setErrorMsg("เกิดข้อผิดพลาด — ลองอีกครั้ง");
     } finally {
-      setIdScanLoading(false);
+      if (opId === flowSessionRef.current) {
+        setIdScanLoading(false);
+      }
     }
   };
 
@@ -281,6 +298,7 @@ export default function PosIdentityPage() {
 
   // ── Reset ────────────────────────────────────────────────────
   const resetAll = () => {
+    flowSessionRef.current += 1;
     setStep("input");
     setMember(null);
     setIdResolved(null);
@@ -295,6 +313,17 @@ export default function PosIdentityPage() {
     setScannerKey("");
     setScannerFullName("");
     setRawPaste("");
+  };
+
+  /** จากฟอร์มสมัคร กลับไปขั้นก่อนหน้า — แท็บกล้อง = ตรวจผล OCR; แท็บอื่น = หน้า input ของแท็บนั้น */
+  const backFromEnrollToReview = () => {
+    flowSessionRef.current += 1;
+    setMember(null);
+    setDoneMsg("");
+    setErrorMsg("");
+    setEnrollError("");
+    setIdScanLoading(false);
+    setStep(tab === "camera" ? "review" : "input");
   };
 
   if (!ready || !userEmail) return null;
@@ -424,6 +453,23 @@ export default function PosIdentityPage() {
             onCapture={(img) => void runOcr(img)}
             disabled={false}
           />
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-3 border-t border-slate-100">
+            <Link
+              href="/pos/dashboard"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-violet-700"
+            >
+              <ArrowLeftIcon className="h-4 w-4 shrink-0" aria-hidden />
+              กลับแดชบอร์ด
+            </Link>
+            <Link
+              href="/pos/exchange"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-violet-700"
+            >
+              <ArrowLeftIcon className="h-4 w-4 shrink-0" aria-hidden />
+              กลับหน้าแลกเงิน
+            </Link>
+          </div>
         </section>
       ) : null}
 
@@ -459,6 +505,15 @@ export default function PosIdentityPage() {
               ระบบจะลองอ่านหลายวิธี (MRZ zone, full image, binarize, enhance) เพื่อความแม่นยำสูงสุด
             </p>
           </div>
+
+          <button
+            type="button"
+            onClick={() => resetAll()}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+          >
+            <ArrowLeftIcon className="h-4 w-4 shrink-0" aria-hidden />
+            กลับ / ยกเลิกการอ่าน (กลับไปถ่ายภาพ)
+          </button>
         </section>
       ) : null}
 
@@ -530,8 +585,8 @@ export default function PosIdentityPage() {
               onClick={resetAll}
               className="flex-1 h-11 rounded-xl border-2 border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 inline-flex items-center justify-center gap-2"
             >
-              <ArrowPathIcon className="h-4 w-4" />
-              ถ่ายใหม่
+              <ArrowLeftIcon className="h-4 w-4 shrink-0" aria-hidden />
+              กลับไปถ่ายภาพใหม่
             </button>
           </div>
         </section>
@@ -648,9 +703,19 @@ export default function PosIdentityPage() {
         </div>
       ) : null}
 
-      {/* ════════ Enrollment Form ════════ */}
-      {idResolved && !member ? (
+      {/* ════════ Enrollment Form (หลังค้นหา — ไม่แสดงค้างระหว่าง review + กำลังค้นหา) ════════ */}
+      {step === "result" && idResolved && !member ? (
         <section className="pos-card-saas rounded-2xl p-4 sm:p-6 space-y-4 border-t-4 border-t-indigo-500/50">
+          <button
+            type="button"
+            onClick={backFromEnrollToReview}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50/80 px-3 py-2 text-xs font-medium text-indigo-900 hover:bg-indigo-100/80"
+          >
+            <ArrowLeftIcon className="h-4 w-4 shrink-0" aria-hidden />
+            {tab === "camera" ?
+              "กลับไปขั้นตอนตรวจผล (แก้เลข / ถ่ายใหม่)"
+            : "กลับไปขั้นตอนก่อนหน้า"}
+          </button>
           <div>
             <h2 className="text-sm font-semibold text-indigo-950 flex items-center gap-2">
               <IdentificationIcon className="h-5 w-5 text-indigo-600" />

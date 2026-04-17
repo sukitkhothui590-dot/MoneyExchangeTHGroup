@@ -30,6 +30,8 @@ import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
 export default function RatesPage() {
   const { t } = useAdminLanguage();
   const p = t.pages.rates;
+
+  const DAILY_LOCK_STORAGE_KEY = "mxth_admin_rates_daily_lock";
   const { showToast } = useToast();
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -41,6 +43,8 @@ export default function RatesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [pullingRates, setPullingRates] = useState(false);
+  /** เปิด = รีเฟรชใช้แคชของวันนี้ (ดึงรายวัน) · ปิด = รีเฟรชบังคับดึงจาก API ทุกครั้ง */
+  const [dailyRateLock, setDailyRateLock] = useState(true);
   const [pendingCurrencyCodes, setPendingCurrencyCodes] = useState<string[]>([]);
   const [pendingBranchMarginCodes, setPendingBranchMarginCodes] = useState<string[]>([]);
   const pendingCurrencyRef = useRef<Set<string>>(new Set());
@@ -153,6 +157,25 @@ export default function RatesPage() {
     fetchCurrencies();
     fetchBranches();
   }, [fetchCurrencies, fetchBranches]);
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(DAILY_LOCK_STORAGE_KEY);
+      if (v === "0") setDailyRateLock(false);
+      else if (v === "1") setDailyRateLock(true);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setDailyRateLockPersist = useCallback((next: boolean) => {
+    setDailyRateLock(next);
+    try {
+      localStorage.setItem(DAILY_LOCK_STORAGE_KEY, next ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     if (selectedBranch !== "global") {
@@ -532,8 +555,11 @@ export default function RatesPage() {
   const handleRefresh = async () => {
     setLoading(true);
     try {
-      // Fetch live exchange rates first
-      const res = await fetch("/api/exchange-rates?refresh=1", {
+      const ratesUrl =
+        dailyRateLock ?
+          "/api/exchange-rates?refresh=1"
+        : "/api/exchange-rates?refresh=1&force=1";
+      const res = await fetch(ratesUrl, {
         cache: "no-store",
       });
       if (!res.ok) {
@@ -587,7 +613,31 @@ export default function RatesPage() {
         title={p.title}
         subtitle={p.subtitle}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div
+              className="flex items-center gap-2 rounded-lg border border-border/80 bg-surface/60 px-2.5 py-1.5"
+              title={p.dailyLockHint}
+            >
+              <span className="text-xs font-medium text-foreground whitespace-nowrap max-w-[9rem] sm:max-w-none leading-tight">
+                {p.dailyLockTitle}
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={dailyRateLock}
+                aria-label={`${p.dailyLockTitle}: ${dailyRateLock ? "on" : "off"}`}
+                onClick={() => setDailyRateLockPersist(!dailyRateLock)}
+                className={`relative inline-flex h-7 w-11 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 ${
+                  dailyRateLock ? "bg-brand" : "bg-muted"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-6 w-6 mt-0.5 ml-0.5 transform rounded-full bg-white shadow ring-1 ring-black/5 transition ${
+                    dailyRateLock ? "translate-x-4" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => void handlePullNewRates()}

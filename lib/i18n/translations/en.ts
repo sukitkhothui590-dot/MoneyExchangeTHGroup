@@ -12,7 +12,6 @@ export const en: typeof th = {
     sprExchange: "Money Exchange",
     sprTransfer: "Money Transfer",
     tripBudget: "Trip Budget Guide",
-    vipRoom: "VIP Foreign Exchange Room",
     bookQueue: "Book queue",
   },
   header: {
@@ -639,62 +638,6 @@ export const en: typeof th = {
     proDesc:
       "Professional team ready to consult and guide every step. Over 50 years of experience in foreign currency exchange business.",
   },
-  vipRoom: {
-    heroSubLabel: "MoneyExchangeTHGroup",
-    heroTitle: "Private VIP Foreign Exchange Room",
-    heroSubtitle: "Private VIP Currency Exchange Service",
-    cardTitle: "Private VIP Foreign Exchange Room",
-    cardSubtitle: "Private VIP Currency Exchange Room",
-    cardDesc:
-      "An exclusive service for customers who reserve exchange rates and amounts in advance, offering convenience, speed, and privacy for every transaction.",
-    stepsTitle: "How to Use the Service",
-    stepsLabel: "Service Steps",
-    step1Title: "Reserve Your Rate and Amount in Advance",
-    step1Desc:
-      "Inform our team of the currency, amount, and preferred time so everything is prepared before your visit.",
-    step2Title: "Schedule Your Appointment",
-    step2Desc:
-      "Choose a convenient time to visit the VIP room — no need to wait in the main queue.",
-    step3Title: "Enter the Private Room",
-    step3Desc:
-      "Upon arrival, our staff will greet you and escort you directly to the private service room for comfort and privacy.",
-    step4Title: "Count and Transact with Confidence",
-    step4Desc:
-      "Verify, count, and complete your transaction in a calm, secure, and private environment.",
-    audienceTitle: "Who Is This For?",
-    aud1Title: "High-Volume Exchange Customers",
-    aud1Desc:
-      "Ideal for those exchanging large amounts who want flexibility and convenience in their transactions.",
-    aud2Title: "Customers Who Value Privacy",
-    aud2Desc:
-      "Transactions are handled privately without waiting alongside the main queue.",
-    aud3Title: "Business Travelers",
-    aud3Desc:
-      "Perfect for those who want to make the most of their time with fast, professional service.",
-    aud4Title: "Customers Who Want to Lock Rates in Advance",
-    aud4Desc:
-      "Plan with confidence — schedule and prepare funds in advance under agreed terms.",
-    ben1Title: "Convenient and Fast",
-    ben1Desc:
-      "No waiting in the main queue. Customers are served immediately at their scheduled time.",
-    ben2Title: "Private and Secure",
-    ben2Desc:
-      "The VIP room is designed with a calm, sectioned atmosphere that prioritizes customer security.",
-    ben3Title: "Professional Team Service",
-    ben3Desc:
-      "Expert staff oversee every step closely to ensure a smooth, transparent, and confident exchange.",
-    detailTitle: "Service Details",
-    detailP1:
-      "To elevate service standards and provide an even more comfortable experience for our customers, the company has prepared a private VIP foreign currency exchange room. This is an exclusive service for customers who reserve exchange rates and amounts in advance and require convenience, speed, and privacy in their transactions.",
-    detailP2:
-      "This service is ideal for customers exchanging larger amounts, business travelers, or those who want to plan their currency exchange in advance for peace of mind. Customers can lock in exchange rates at an agreed time and be assured that the required foreign currency will be prepared before the appointment.",
-    ctaSubLabel: "MoneyExchangeTHGroup",
-    ctaTitle: "VIP Foreign Exchange Room",
-    ctaDesc:
-      "Inquire about rates in advance, schedule an appointment, and receive private service immediately.",
-    ctaPhone: "Call 02-6113185",
-    ctaLine: "LINE Official @298ickaf",
-  },
   news: {
     title: "News & Information",
     empty: "No news yet",
@@ -779,12 +722,6 @@ export const en: typeof th = {
         titleSub: "International Transfer",
         description:
           "Transfer money anywhere, fast and secure with peace of mind",
-      },
-      {
-        title: "Private VIP Foreign Exchange Room",
-        titleSub: "Private VIP Currency Exchange Service",
-        description:
-          "A private exchange room for customers who reserve exchange rates and amounts in advance for convenience, speed, and privacy",
       },
     ],
   },

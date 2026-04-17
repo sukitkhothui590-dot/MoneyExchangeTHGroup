@@ -232,7 +232,7 @@ export type CustomerBooking = {
   pickup_method?: "branch" | "wallet";
   slip_preview?: string;
   note?: string;
-  /** รหัสยืนยันแสดงให้พนักงานที่สาขา (เช่น MXTH-20260411-AB12CD34) */
+  /** รหัสยืนยันแสดงให้พนักงานที่สาขา (เช่น BK-20260417-482915) */
   confirmation_code?: string;
   status: BookingStatus;
   created_at: string;

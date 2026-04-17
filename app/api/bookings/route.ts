@@ -1,3 +1,4 @@
+import { newBookingReference } from "@/lib/book/bookingReference";
 import { createClient } from "@/lib/supabase/server";
 import {
   getSessionProfile,
@@ -108,6 +109,9 @@ export async function POST(request: Request) {
         status: body.status || "pending_payment",
         slip_url: body.slip_url || body.slipUrl || "",
         note: body.note || "",
+        confirmation_code:
+          String(body.confirmation_code ?? body.confirmationCode ?? "").trim() ||
+          newBookingReference(),
       })
       .select()
       .single();

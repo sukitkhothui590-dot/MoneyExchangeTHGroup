@@ -1,14 +1,5 @@
 "use client";
 
-import {
-  ArrowTrendingUpIcon,
-  BanknotesIcon,
-  ChartBarIcon,
-  ClockIcon,
-  CubeIcon,
-  QueueListIcon,
-  SparklesIcon,
-} from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -149,29 +140,31 @@ export default function PosDashboardPage() {
       href: "/pos/exchange",
       title: "แลกเงินหน้าเคาน์เตอร์",
       desc: "ค้นหาสมาชิก บันทึกเรทและยอด THB",
-      icon: BanknotesIcon,
       accent: "from-emerald-500/15 to-teal-500/10",
     },
     {
       href: "/pos/queue",
       title: "คิว / การจอง",
       desc: "ดูคำขอที่รอชำระหรือรอตรวจ",
-      icon: QueueListIcon,
       accent: "from-sky-500/15 to-indigo-500/10",
     },
     {
       href: "/pos/history",
       title: "ประวัติธุรกรรม",
       desc: "กรองตามวันที่ ยกเลิกรายการ",
-      icon: ClockIcon,
       accent: "from-violet-500/15 to-fuchsia-500/10",
     },
     {
       href: "/pos/reports",
       title: "รายงานสรุป",
       desc: "ยอดรวมตามสกุลเงิน ส่งออก CSV",
-      icon: ChartBarIcon,
       accent: "from-amber-500/15 to-orange-500/10",
+    },
+    {
+      href: "/pos/reports#branch-issues",
+      title: "แจ้งปัญหาสาขา",
+      desc: "บันทึกเหตุการณ์ส่งหลังบ้าน (รายงานสาขา)",
+      accent: "from-rose-500/15 to-amber-500/10",
     },
   ] as const;
 
@@ -188,8 +181,7 @@ export default function PosDashboardPage() {
         <div className="absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-teal-400/10 blur-2xl pointer-events-none" />
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <p className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/60">
-              <SparklesIcon className="h-3.5 w-3.5 text-amber-300/90" />
+            <p className="text-[11px] font-medium uppercase tracking-wider text-white/60">
               {timeGreeting()}
             </p>
             <h2 className="mt-1 text-xl sm:text-2xl font-semibold tracking-tight truncate">
@@ -211,9 +203,8 @@ export default function PosDashboardPage() {
           {branch?.id ? (
             <Link
               href="/pos/exchange"
-              className="shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-md hover:bg-slate-100 transition-colors"
+              className="shrink-0 inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-md hover:bg-slate-100 transition-colors"
             >
-              <BanknotesIcon className="h-5 w-5 text-emerald-600" />
               เริ่มแลกเงิน
             </Link>
           ) : null}
@@ -283,20 +274,17 @@ export default function PosDashboardPage() {
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             {/* สกุลเงินวันนี้ */}
             <section className="xl:col-span-1 pos-card-saas rounded-2xl p-5 min-w-0">
-              <div className="flex items-center gap-2 mb-4">
-                <ArrowTrendingUpIcon className="h-5 w-5 text-emerald-600 shrink-0" />
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    สรุปตามสกุล — วันนี้
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    {new Date().toLocaleDateString("th-TH", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </p>
-                </div>
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  สรุปตามสกุล — วันนี้
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  {new Date().toLocaleDateString("th-TH", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </p>
               </div>
               {dash?.summaryToday?.by_currency?.length ? (
                 <ul className="space-y-3">
@@ -340,16 +328,13 @@ export default function PosDashboardPage() {
             {/* ธุรกรรมล่าสุด */}
             <section className="xl:col-span-2 pos-card-saas rounded-2xl p-5 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-4">
-                <div className="flex items-center gap-2 min-w-0">
-                  <CubeIcon className="h-5 w-5 text-slate-600 shrink-0" />
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-semibold text-slate-900">
-                      ธุรกรรมล่าสุด
-                    </h3>
-                    <p className="text-[11px] text-slate-500 truncate">
-                      เรียงจากเวลาล่าสุด (สูงสุด 6 รายการ)
-                    </p>
-                  </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    ธุรกรรมล่าสุด
+                  </h3>
+                  <p className="text-[11px] text-slate-500 truncate">
+                    เรียงจากเวลาล่าสุด (สูงสุด 6 รายการ)
+                  </p>
                 </div>
                 <Link
                   href="/pos/history"
@@ -416,17 +401,20 @@ export default function PosDashboardPage() {
             <Link
               key={c.href}
               href={c.href}
-              className={`group relative overflow-hidden flex gap-4 pos-card-saas rounded-2xl p-4 hover:shadow-md hover:border-slate-300/80 transition-all duration-200 bg-gradient-to-br ${c.accent}`}
+              className={`group relative overflow-hidden block pos-card-saas rounded-2xl p-4 hover:shadow-md hover:border-slate-300/80 transition-all duration-200 bg-gradient-to-br ${c.accent}`}
             >
-              <div className="shrink-0 h-11 w-11 rounded-xl bg-white/90 border border-slate-200/80 flex items-center justify-center shadow-sm group-hover:scale-[1.03] transition-transform">
-                <c.icon className="h-6 w-6 text-slate-700" />
-              </div>
-              <div className="min-w-0">
+              <div className="min-w-0 pr-6">
                 <p className="font-semibold text-slate-900 group-hover:text-[var(--site-accent)] transition-colors">
                   {c.title}
                 </p>
                 <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{c.desc}</p>
               </div>
+              <span
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg font-light group-hover:text-[var(--site-accent)]"
+                aria-hidden
+              >
+                ›
+              </span>
             </Link>
           ))}
         </div>

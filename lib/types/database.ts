@@ -423,6 +423,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      branch_issue_reports: {
+        Row: {
+          id: string;
+          branch_id: string;
+          summary: string;
+          detail: string;
+          severity: "low" | "medium" | "high";
+          reported_at: string;
+          created_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          branch_id: string;
+          summary: string;
+          detail?: string;
+          severity?: "low" | "medium" | "high";
+          reported_at?: string;
+          created_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          branch_id?: string;
+          summary?: string;
+          detail?: string;
+          severity?: "low" | "medium" | "high";
+          reported_at?: string;
+          created_by?: string | null;
+        };
+        Relationships: [];
+      };
       branch_currency_margins: {
         Row: {
           id: number;

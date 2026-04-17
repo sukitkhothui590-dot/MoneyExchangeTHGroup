@@ -36,6 +36,29 @@ export type CurrencyAgg = {
   count: number;
 };
 
+export type BranchRowMerged = BranchAgg & { void_count: number };
+
+/** Union of branches that have active txns and/or voided txns (for reports table). */
+export function mergeBranchAndVoid(
+  byBranch: BranchAgg[],
+  voidByBranch: { branch_id: string; count: number }[],
+): BranchRowMerged[] {
+  const voidMap = new Map(voidByBranch.map((v) => [v.branch_id, v.count]));
+  const ids = new Set([
+    ...byBranch.map((b) => b.branch_id),
+    ...voidByBranch.map((v) => v.branch_id),
+  ]);
+  return [...ids]
+    .map((branch_id) => ({
+      branch_id,
+      count: byBranch.find((b) => b.branch_id === branch_id)?.count ?? 0,
+      total_thb:
+        byBranch.find((b) => b.branch_id === branch_id)?.total_thb ?? 0,
+      void_count: voidMap.get(branch_id) ?? 0,
+    }))
+    .sort((a, b) => b.total_thb - a.total_thb);
+}
+
 export function aggregateTransactionsByBranch(txns: MockTxn[]): BranchAgg[] {
   const map = new Map<string, { total: number; count: number }>();
   for (const t of txns) {

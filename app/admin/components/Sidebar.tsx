@@ -38,40 +38,62 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+function SidebarPanel({
+  collapsed,
+  onClose,
+}: {
+  collapsed: boolean;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
   const { t } = useAdminLanguage();
-  const { desktopCollapsed } = useAdminSidebar();
 
-  const sidebarContent = (
-    <aside className="w-[240px] min-h-screen border-r border-brand-dark/40 bg-gradient-to-b from-brand via-brand to-brand-dark flex flex-col shadow-[4px_0_24px_-8px_rgba(0,0,0,0.2)]">
-      <div className="relative h-16 flex items-center justify-center px-4 border-b border-white/10">
+  return (
+    <aside className="w-full min-h-full min-w-0 border-r border-brand-dark/40 bg-gradient-to-b from-brand via-brand to-brand-dark flex flex-col shadow-[4px_0_24px_-8px_rgba(0,0,0,0.2)]">
+      <div
+        className={[
+          "relative h-16 flex items-center border-b border-white/10 shrink-0",
+          collapsed ? "justify-center px-2" : "justify-center px-4",
+        ].join(" ")}
+      >
         <Link
           href="/admin/dashboard"
-          className="flex min-w-0 justify-center items-center max-w-full"
+          className={[
+            "flex min-w-0 items-center max-w-full",
+            collapsed ? "justify-center" : "justify-center",
+          ].join(" ")}
+          title={collapsed ? "Dashboard" : undefined}
         >
           <SiteImage
             src={SITE_LOGO_SRC}
             alt="MoneyExchangeTHGroup"
-            width={130}
-            height={44}
-            className={`object-contain object-center max-h-10 w-auto max-w-[160px] ${SITE_LOGO_ON_DARK_CLASS}`}
+            width={collapsed ? 40 : 130}
+            height={collapsed ? 40 : 44}
+            className={`object-contain object-center shrink-0 ${SITE_LOGO_ON_DARK_CLASS} ${
+              collapsed ? "max-h-10 max-w-10 w-10 h-10 rounded-lg" : "max-h-10 w-auto max-w-[160px]"
+            }`}
             bypassPlaceholder
           />
         </Link>
-        <button
-          type="button"
-          onClick={onClose}
-          className="lg:hidden absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 shrink-0 flex items-center justify-center rounded-lg text-white/85 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-        >
-          <XMarkIcon className="w-5 h-5" />
-        </button>
+        {onClose ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="lg:hidden absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 shrink-0 flex items-center justify-center rounded-lg text-white/85 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        ) : null}
       </div>
 
-      <nav className="flex-1 px-3 py-4 overflow-y-auto scrollbar-hide">
-        <p className="text-[10px] font-semibold text-white/45 uppercase tracking-wider px-3 mb-2">
-          {t.sidebar.mainMenu}
-        </p>
+      <nav className="flex-1 px-2 py-4 overflow-y-auto scrollbar-hide min-h-0">
+        {!collapsed ? (
+          <p className="text-[10px] font-semibold text-white/45 uppercase tracking-wider px-3 mb-2">
+            {t.sidebar.mainMenu}
+          </p>
+        ) : (
+          <div className="h-px w-6 mx-auto mb-2 bg-white/15 rounded-full" aria-hidden />
+        )}
         <div className="space-y-1">
           {navConfig.map((item) => {
             const label = t.sidebar.nav[item.key];
@@ -85,16 +107,23 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 ${
+                title={collapsed ? label : undefined}
+                className={[
+                  "flex items-center rounded-xl text-[13px] font-medium transition-all duration-200",
+                  collapsed
+                    ? "justify-center px-2 py-2.5"
+                    : "gap-2.5 px-3 py-2.5",
                   isActive
                     ? "bg-white text-brand shadow-md shadow-black/15"
-                    : "text-white/88 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 hover:translate-x-0.5"
-                }`}
+                    : collapsed
+                      ? "text-white/88 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10"
+                      : "text-white/88 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 hover:translate-x-0.5",
+                ].join(" ")}
               >
                 <item.icon
                   className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-brand" : "text-white/90"}`}
                 />
-                {label}
+                {!collapsed ? <span className="truncate min-w-0">{label}</span> : null}
               </Link>
             );
           })}
@@ -102,16 +131,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </nav>
     </aside>
   );
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { desktopCollapsed } = useAdminSidebar();
 
   return (
     <>
       <div
         className={[
           "hidden lg:flex flex-shrink-0 min-w-0 overflow-hidden transition-[width] duration-200 ease-out",
-          desktopCollapsed ? "lg:w-0" : "lg:w-[240px]",
+          desktopCollapsed ? "lg:w-16" : "lg:w-[240px]",
         ].join(" ")}
       >
-        {sidebarContent}
+        <SidebarPanel collapsed={desktopCollapsed} />
       </div>
 
       {isOpen && (
@@ -121,7 +154,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             onClick={onClose}
           />
           <div className="relative w-[240px] h-full shadow-xl animate-slide-in-left">
-            {sidebarContent}
+            <SidebarPanel collapsed={false} onClose={onClose} />
           </div>
         </div>
       )}

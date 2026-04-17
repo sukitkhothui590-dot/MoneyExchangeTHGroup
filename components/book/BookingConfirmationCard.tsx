@@ -57,7 +57,7 @@ export default function BookingConfirmationCard({ snapshot }: Props) {
       });
       const a = document.createElement("a");
       a.href = dataUrl;
-      a.download = `MXTH-booking-${snapshot.reference.replace(/[^A-Z0-9-]/gi, "_")}.png`;
+      a.download = `booking-${snapshot.reference.replace(/[^A-Z0-9-]/gi, "_")}.png`;
       a.click();
     } catch {
       window.alert(p.bookSaveImageError);

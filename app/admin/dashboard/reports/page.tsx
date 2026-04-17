@@ -7,15 +7,18 @@ import Header from "../../components/Header";
 import AdminPageHelp from "../../components/AdminPageHelp";
 import ReportSectionCard from "../../components/ReportSectionCard";
 import ReportsChartsPanel from "../../components/reports/ReportsChartsPanel";
+import BranchIssuesReport from "../../components/reports/BranchIssuesReport";
 import ReportsMetricCard from "../../components/ReportsMetricCard";
 import { USE_MOCK_DATA } from "@/lib/config";
 import { MOCK_BRANCHES } from "@/lib/mock/branches";
+import { MOCK_BRANCH_ISSUES } from "@/lib/mock/branchIssues";
 import type { KycStatus } from "@/lib/mock/memberKyc";
 import {
   aggregateTransactionsByBranch,
   aggregateTransactionsByCurrency,
   aggregateTransactionsByDay,
   avgThbPerTransaction,
+  mergeBranchAndVoid,
   sumThb,
   uniqueMemberCount,
 } from "@/lib/mock/reports";
@@ -96,6 +99,19 @@ function AdminReportsMock() {
 
   const daily = useMemo(() => aggregateTransactionsByDay(txns), [txns]);
   const byBranch = useMemo(() => aggregateTransactionsByBranch(txns), [txns]);
+  const branchRowsMerged = useMemo(
+    () => mergeBranchAndVoid(byBranch, []),
+    [byBranch],
+  );
+  const mockIssueBranches = useMemo(
+    () =>
+      MOCK_BRANCHES.map((b) => ({
+        id: b.id,
+        name: b.name_en,
+        name_th: b.name_th,
+      })),
+    [],
+  );
   const byCurrency = useMemo(
     () => aggregateTransactionsByCurrency(txns),
     [txns],
@@ -131,19 +147,26 @@ function AdminReportsMock() {
   };
 
   const exportCsv = () => {
-    const header = "section,key,count,total_thb";
+    const header = "section,key,count,total_thb,notes";
     const lines: string[] = [header];
     for (const d of daily) {
-      lines.push(`daily,${d.date},${d.count},${d.total_thb}`);
+      lines.push(`daily,${d.date},${d.count},${d.total_thb},`);
     }
-    for (const b of byBranch) {
-      lines.push(`branch,${b.branch_id},${b.count},${b.total_thb}`);
+    for (const b of branchRowsMerged) {
+      lines.push(
+        `branch,${b.branch_id},${b.count},${b.total_thb},void:${b.void_count}`,
+      );
+    }
+    for (const iss of MOCK_BRANCH_ISSUES) {
+      lines.push(
+        `branch_issue,${iss.branch_id},0,0,${iss.severity}:${iss.summary.replace(/,/g, ";")}`,
+      );
     }
     for (const c of byCurrency) {
-      lines.push(`currency,${c.currency_code},${c.count},${c.total_thb}`);
+      lines.push(`currency,${c.currency_code},${c.count},${c.total_thb},`);
     }
     for (const { status, count } of kycBreakdown) {
-      lines.push(`kyc_status,${status},${count},`);
+      lines.push(`kyc_status,${status},${count},,`);
     }
     const blob = new Blob([lines.join("\n")], {
       type: "text/csv;charset=utf-8",
@@ -378,7 +401,7 @@ function AdminReportsMock() {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             <ReportSectionCard title={r.sectionBranch}>
               <div className={tableWrapClass}>
-                <table className="w-full min-w-[360px] text-sm">
+                <table className="w-full min-w-[420px] text-sm">
                   <thead>
                     <tr className="bg-surface-50/90 text-left text-xs font-semibold uppercase tracking-wider text-muted">
                       <th className="px-5 py-3.5 sm:px-6">{r.colBranch}</th>
@@ -386,22 +409,25 @@ function AdminReportsMock() {
                         {r.colCount}
                       </th>
                       <th className="px-5 py-3.5 text-right sm:px-6">
+                        {r.colVoided}
+                      </th>
+                      <th className="px-5 py-3.5 text-right sm:px-6">
                         {r.colThbSum}
                       </th>
                     </tr>
                   </thead>
                   <tbody className="text-[15px]">
-                    {byBranch.length === 0 ? (
+                    {branchRowsMerged.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={3}
+                          colSpan={4}
                           className="px-6 py-14 text-center text-muted"
                         >
                           {r.emptyData}
                         </td>
                       </tr>
                     ) : (
-                      byBranch.map((b) => (
+                      branchRowsMerged.map((b) => (
                         <tr
                           key={b.branch_id}
                           className="transition-colors hover:bg-brand-subtle/25"
@@ -416,6 +442,9 @@ function AdminReportsMock() {
                           </td>
                           <td className="px-5 py-3.5 text-right tabular-nums sm:px-6">
                             {b.count}
+                          </td>
+                          <td className="px-5 py-3.5 text-right tabular-nums sm:px-6">
+                            <span className="text-muted">0</span>
                           </td>
                           <td className="px-5 py-3.5 text-right text-base font-semibold tabular-nums sm:px-6">
                             ฿{b.total_thb.toLocaleString(numLocale)}
@@ -477,6 +506,37 @@ function AdminReportsMock() {
               </div>
             </ReportSectionCard>
           </div>
+
+          <BranchIssuesReport
+            issues={MOCK_BRANCH_ISSUES}
+            branches={mockIssueBranches}
+            branchLabel={branchLabel}
+            labels={{
+              sectionTitle: r.sectionBranchIssues,
+              colBranch: r.colBranch,
+              colReportedAt: r.colIssueReportedAt,
+              colReporter: r.colIssueReporter,
+              colSummary: r.colIssueSummary,
+              colSeverity: r.colIssueSeverity,
+              colDetail: r.colIssueDetail,
+              severityLow: r.severityLow,
+              severityMedium: r.severityMedium,
+              severityHigh: r.severityHigh,
+              empty: r.emptyBranchIssues,
+              formToggle: r.formToggleRecordIssue,
+              formBranch: r.formIssueBranch,
+              formSummary: r.formIssueSummary,
+              formDetail: r.formIssueDetail,
+              formSeverity: r.formIssueSeverity,
+              formSubmit: r.formSubmitIssue,
+              formSubmitting: r.formSubmittingIssue,
+              formSuccess: r.formSuccessIssue,
+              formCancel: r.formCancelIssue,
+              formErrorRequired: r.formErrorRequiredIssue,
+            }}
+            dateLocale={dateLocale}
+            allowCreate={false}
+          />
         </div>
       </div>
     </>

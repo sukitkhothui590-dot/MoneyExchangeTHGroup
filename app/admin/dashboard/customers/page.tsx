@@ -100,6 +100,7 @@ export default function AdminCustomersPage() {
     const q = search.toLowerCase();
     const matchSearch =
       m.name.toLowerCase().includes(q) ||
+      m.id.toLowerCase().includes(q) ||
       m.email.toLowerCase().includes(q) ||
       m.phone.includes(search) ||
       (m.kyc?.legal_name ?? "").toLowerCase().includes(q) ||
@@ -227,14 +228,20 @@ export default function AdminCustomersPage() {
             </div>
 
             <div className="border border-border rounded-xl overflow-hidden bg-white overflow-x-auto">
-              <table className="w-full text-sm min-w-[960px]">
+              <table className="w-full text-sm min-w-[1140px]">
                 <thead>
                   <tr className="border-b border-border bg-surface">
                     <th className="text-left px-4 py-3 text-muted font-medium">
                       {identity.colName}
                     </th>
-                    <th className="text-left px-4 py-3 text-muted font-medium">
-                      {identity.colContact}
+                    <th className="text-left px-4 py-3 text-muted font-medium min-w-[10.5rem]">
+                      {identity.colMemberId}
+                    </th>
+                    <th className="text-left px-4 py-3 text-muted font-medium min-w-[200px]">
+                      {identity.colEmail}
+                    </th>
+                    <th className="text-left px-4 py-3 text-muted font-medium min-w-[140px]">
+                      {identity.colPhone}
                     </th>
                     <th className="text-left px-4 py-3 text-muted font-medium">
                       {identity.colKyc}
@@ -275,23 +282,35 @@ export default function AdminCustomersPage() {
                           {m.name || "ไม่ระบุชื่อ"}
                         </button>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="space-y-1 max-w-[220px]">
-                          <input
-                            value={m.email}
-                            onChange={(e) =>
-                              patchField(m.id, { email: e.target.value })
-                            }
-                            className="w-full text-xs border border-transparent hover:border-border rounded px-2 py-0.5"
-                          />
-                          <input
-                            value={m.phone}
-                            onChange={(e) =>
-                              patchField(m.id, { phone: e.target.value })
-                            }
-                            className="w-full text-xs tabular-nums border border-transparent hover:border-border rounded px-2 py-0.5"
-                          />
-                        </div>
+                      <td className="px-4 py-3 align-top max-w-[220px]">
+                        <p
+                          className="font-mono text-[11px] text-muted break-all leading-snug"
+                          title={m.id}
+                        >
+                          {m.id}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 align-top">
+                        <input
+                          value={m.email}
+                          onChange={(e) =>
+                            patchField(m.id, { email: e.target.value })
+                          }
+                          className="w-full min-w-0 max-w-[260px] text-xs border border-transparent hover:border-border rounded px-2 py-1"
+                          type="email"
+                          autoComplete="off"
+                        />
+                      </td>
+                      <td className="px-4 py-3 align-top">
+                        <input
+                          value={m.phone}
+                          onChange={(e) =>
+                            patchField(m.id, { phone: e.target.value })
+                          }
+                          className="w-full min-w-[120px] max-w-[180px] text-xs tabular-nums border border-transparent hover:border-border rounded px-2 py-1"
+                          inputMode="tel"
+                          autoComplete="off"
+                        />
                       </td>
                       <td className="px-4 py-3">
                         <span

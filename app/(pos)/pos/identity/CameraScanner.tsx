@@ -306,7 +306,8 @@ export default function CameraScanner({ onCapture, disabled }: Props) {
             type="button"
             onClick={stopCamera}
             className="h-10 w-10 rounded-full bg-black/60 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/80 transition-colors"
-            aria-label="ปิดกล้อง"
+            aria-label="ปิดกล้อง — กลับไปเลือกถ่ายภาพหรืออัปโหลด"
+            title="ปิดกล้อง (กลับ)"
           >
             <XMarkIcon className="h-5 w-5" />
           </button>

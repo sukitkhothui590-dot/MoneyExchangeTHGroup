@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePosSession } from "@/lib/context/PosSessionContext";
 import type { Currency } from "@/lib/types/database";
+import { PosBranchIssuesPanel } from "../../components/PosBranchIssuesPanel";
 
 function ymdLocal(d: Date): string {
   const y = d.getFullYear();
@@ -145,6 +146,11 @@ export default function PosReportsPage() {
           </p>
         </div>
       </section>
+
+      <PosBranchIssuesPanel
+        branchId={branch?.id}
+        branchNameTh={branch?.name_th ?? "—"}
+      />
 
       <div className="flex flex-col gap-3 pos-card-saas rounded-xl border border-blue-100/70 p-3 sm:p-4">
         <div className="flex flex-wrap gap-2">

@@ -10,6 +10,7 @@ import {
   WalletIcon,
 } from "@heroicons/react/24/outline";
 import type { Booking, BookingStatus } from "@/lib/types/database";
+import { bookingDisplayReference } from "@/lib/book/bookingReference";
 import TwemojiFlag from "./TwemojiFlag";
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
 
@@ -129,21 +130,17 @@ export default function BookingDetailModal({
 
         {/* Info Grid */}
         <div className="grid grid-cols-2 gap-3 mb-5">
-          {booking.confirmation_code ? (
-            <div className="bg-surface rounded-lg p-3 col-span-2">
-              <p className="text-xs text-muted mb-0.5">
-                รหัสยืนยัน (แสดงให้พนักงาน)
-              </p>
-              <p className="text-sm font-mono font-semibold text-brand">
-                {booking.confirmation_code}
-              </p>
-            </div>
-          ) : null}
-          <div className="bg-surface rounded-lg p-3">
-            <p className="text-xs text-muted mb-0.5">{m.lblBookingId}</p>
-            <p className="text-sm font-mono font-semibold text-foreground">
-              {booking.id}
+          <div className="bg-surface rounded-lg p-3 col-span-2">
+            <p className="text-xs text-muted mb-0.5">
+              รหัสอ้างอิงการจอง
             </p>
+            <p className="text-sm font-mono font-semibold text-brand tracking-tight">
+              {bookingDisplayReference(booking)}
+            </p>
+          </div>
+          <div className="bg-surface rounded-lg p-3 col-span-2">
+            <p className="text-xs text-muted mb-0.5">{m.lblBookingId}</p>
+            <p className="text-xs font-mono text-muted break-all">{booking.id}</p>
           </div>
           <div className="bg-surface rounded-lg p-3">
             <p className="text-xs text-muted mb-0.5">{m.lblStatus}</p>
@@ -156,6 +153,12 @@ export default function BookingDetailModal({
           <div className="bg-surface rounded-lg p-3">
             <p className="text-xs text-muted mb-0.5">{m.lblMember}</p>
             <p className="text-sm text-foreground">{booking.member_name}</p>
+          </div>
+          <div className="bg-surface rounded-lg p-3 col-span-2">
+            <p className="text-xs text-muted mb-0.5">{m.lblMemberRecordId}</p>
+            <p className="text-xs font-mono text-muted break-all">
+              {booking.member_id}
+            </p>
           </div>
           <div className="bg-surface rounded-lg p-3">
             <p className="text-xs text-muted mb-0.5">{m.lblBookedAt}</p>
@@ -230,7 +233,7 @@ export default function BookingDetailModal({
               </p>
               <p className="text-xs text-muted mt-0.5">{m.qrHint}</p>
               <p className="text-xs font-mono text-brand mt-1">
-                {booking.confirmation_code || booking.id}
+                {bookingDisplayReference(booking)}
               </p>
             </div>
           </div>

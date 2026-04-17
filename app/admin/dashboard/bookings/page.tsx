@@ -22,6 +22,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
 import { fillTemplate } from "@/lib/admin/screenCopy";
+import { bookingDisplayReference } from "@/lib/book/bookingReference";
 
 type StatusFilter = "all" | BookingStatus;
 
@@ -100,10 +101,15 @@ export default function BookingsPage() {
   ).length;
 
   const filtered = bookings.filter((b) => {
+    const q = search.toLowerCase();
+    const ref = bookingDisplayReference(b);
     const matchSearch =
-      b.id.toLowerCase().includes(search.toLowerCase()) ||
-      b.member_name.toLowerCase().includes(search.toLowerCase()) ||
-      b.currency_code.toLowerCase().includes(search.toLowerCase());
+      ref.toLowerCase().includes(q) ||
+      (b.confirmation_code?.toLowerCase().includes(q) ?? false) ||
+      b.id.toLowerCase().includes(q) ||
+      b.member_name.toLowerCase().includes(q) ||
+      b.member_id.toLowerCase().includes(q) ||
+      b.currency_code.toLowerCase().includes(q);
     const matchStatus = statusFilter === "all" || b.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -203,14 +209,20 @@ export default function BookingsPage() {
         {/* Table */}
         <div className="border border-border rounded-xl overflow-hidden bg-white">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[800px]">
+            <table className="w-full text-sm min-w-[1120px]">
               <thead>
                 <tr className="border-b border-border bg-surface">
                   <th className="text-left px-5 py-3 font-medium text-muted">
                     {b.colBookingId}
                   </th>
+                  <th className="text-left px-5 py-3 font-medium text-muted whitespace-nowrap min-w-[9rem]">
+                    {b.colBookedAt}
+                  </th>
                   <th className="text-left px-5 py-3 font-medium text-muted">
-                    {b.colMember}
+                    {b.colMemberName}
+                  </th>
+                  <th className="text-left px-5 py-3 font-medium text-muted">
+                    {b.colMemberId}
                   </th>
                   <th className="text-left px-5 py-3 font-medium text-muted">
                     {b.colCurrency}
@@ -238,19 +250,29 @@ export default function BookingsPage() {
                     key={booking.id}
                     className="border-b border-border last:border-b-0 hover:bg-surface/60 transition-colors"
                   >
-                    <td className="px-5 py-3.5">
-                      <span className="font-mono text-xs font-semibold text-foreground">
-                        {booking.id}
+                    <td className="px-5 py-3.5 align-top">
+                      <span
+                        className="font-mono text-xs font-semibold text-foreground tracking-tight"
+                        title={booking.id}
+                      >
+                        {bookingDisplayReference(booking)}
                       </span>
-                      <p className="text-[11px] text-muted">
-                        {formatDate(booking.created_at)}
+                    </td>
+                    <td className="px-5 py-3.5 align-top text-[11px] text-muted tabular-nums whitespace-nowrap">
+                      {formatDate(booking.created_at)}
+                    </td>
+                    <td className="px-5 py-3.5 align-top">
+                      <p className="font-medium text-foreground">
+                        {booking.member_name || "—"}
                       </p>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <p className="font-medium text-foreground">
-                        {booking.member_name}
+                    <td className="px-5 py-3.5 align-top max-w-[220px]">
+                      <p
+                        className="font-mono text-[11px] text-muted break-all leading-snug"
+                        title={booking.member_id}
+                      >
+                        {booking.member_id}
                       </p>
-                      <p className="text-xs text-muted">{booking.member_id}</p>
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
@@ -307,7 +329,7 @@ export default function BookingsPage() {
                 {filtered.length === 0 && (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={10}
                       className="px-5 py-12 text-center text-muted"
                     >
                       {b.emptyBookings}

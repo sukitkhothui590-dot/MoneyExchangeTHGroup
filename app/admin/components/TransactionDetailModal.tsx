@@ -12,6 +12,7 @@ import type {
 } from "@/lib/mock/memberKyc";
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
 import type { AdminTranslations } from "@/lib/admin/translations";
+import { transactionDisplayReference } from "@/lib/book/bookingReference";
 
 export type LiveMemberBasics = {
   email: string;
@@ -141,7 +142,14 @@ export default function TransactionDetailModal({
             </h3>
             <div className="rounded-xl border border-border/80 bg-surface/40 px-3 shadow-inner">
               <Row label={s.colId}>
-                <span className="font-mono text-xs">{txn.id}</span>
+                <div className="space-y-1 min-w-0">
+                  <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
+                    {transactionDisplayReference(txn)}
+                  </span>
+                  <span className="block font-mono text-[10px] text-muted break-all">
+                    {txn.id}
+                  </span>
+                </div>
               </Row>
               <Row label={s.colTime}>
                 {new Date(txn.created_at).toLocaleString(dateLocale, {

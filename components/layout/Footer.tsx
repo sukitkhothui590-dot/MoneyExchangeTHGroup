@@ -36,7 +36,6 @@ export default function Footer() {
   const serviceLinks = [
     { href: "/spr-money-exchange", label: t.nav.sprExchange },
     { href: "/spr-money-transfer", label: t.nav.sprTransfer },
-    { href: "/vip-foreign-exchange-room", label: t.nav.vipRoom },
   ];
   const contactLinks = [
     { href: "/about", label: t.footer.aboutUs },

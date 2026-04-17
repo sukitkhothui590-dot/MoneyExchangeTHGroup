@@ -8,9 +8,11 @@ import type { User } from "@supabase/supabase-js";
 
 type Props = {
   user: User | null;
+  /** ข้อความภาษาอังกฤษยาว — ลด padding/ตัวอักษรให้พอดีแถบเดียว */
+  compact?: boolean;
 };
 
-export default function HeaderAccountButtons({ user }: Props) {
+export default function HeaderAccountButtons({ user, compact }: Props) {
   const { t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
@@ -22,13 +24,23 @@ export default function HeaderAccountButtons({ user }: Props) {
     router.refresh();
   }
 
+  const btnBase = compact
+    ? "text-[9px] xl:text-[10px] tracking-[0.06em] px-2 py-1.5"
+    : "text-[10px] xl:text-[11px] tracking-[0.1em] px-3 py-1.5";
+
   if (user) {
     return (
-      <div className="flex items-center gap-1.5 sm:gap-2 pl-2 xl:pl-3 border-l border-border shrink-0">
+      <div
+        className={[
+          "flex items-center border-l border-border shrink-0",
+          compact ? "gap-1 pl-1.5 xl:pl-2" : "gap-1.5 sm:gap-2 pl-2 xl:pl-3",
+        ].join(" ")}
+      >
         <Link
           href="/customer/profile"
           className={[
-            "rounded-full border px-3 py-1.5 text-[10px] xl:text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors whitespace-nowrap",
+            "rounded-full border font-semibold uppercase transition-colors whitespace-nowrap",
+            btnBase,
             pathname === "/customer/profile" || pathname.startsWith("/customer/profile")
               ? "border-site-accent bg-site-subtle text-site-accent"
               : "border-site-accent/45 text-site-accent hover:bg-site-subtle",
@@ -39,7 +51,10 @@ export default function HeaderAccountButtons({ user }: Props) {
         <button
           type="button"
           onClick={() => void signOut()}
-          className="rounded-full border border-border bg-white px-2.5 sm:px-3 py-1.5 text-[10px] xl:text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-700 whitespace-nowrap shadow-sm hover:bg-surface-50 transition-colors"
+          className={[
+            "rounded-full border border-border bg-white font-semibold uppercase text-surface-700 whitespace-nowrap shadow-sm hover:bg-surface-50 transition-colors",
+            compact ? "px-2 py-1.5 text-[9px] xl:text-[10px] tracking-[0.06em]" : "px-2.5 sm:px-3 py-1.5 text-[10px] xl:text-[11px] tracking-[0.1em]",
+          ].join(" ")}
         >
           {t.portal.signOut}
         </button>
@@ -48,11 +63,17 @@ export default function HeaderAccountButtons({ user }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-2 pl-2 xl:pl-3 border-l border-border shrink-0">
+    <div
+      className={[
+        "flex items-center border-l border-border shrink-0",
+        compact ? "gap-1 pl-1.5 xl:pl-2" : "gap-2 pl-2 xl:pl-3",
+      ].join(" ")}
+    >
       <Link
         href="/customer/register"
         className={[
-          "rounded-full border px-3 py-1.5 text-[10px] xl:text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors whitespace-nowrap",
+          "rounded-full border font-semibold uppercase transition-colors whitespace-nowrap",
+          btnBase,
           pathname === "/customer/register"
             ? "border-site-accent bg-site-subtle text-site-accent"
             : "border-site-accent/45 text-site-accent hover:bg-site-subtle",
@@ -63,7 +84,10 @@ export default function HeaderAccountButtons({ user }: Props) {
       <Link
         href="/customer/login"
         className={[
-          "rounded-full px-3 py-1.5 text-[10px] xl:text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors whitespace-nowrap text-white",
+          "rounded-full font-semibold uppercase transition-colors whitespace-nowrap text-white",
+          compact
+            ? "px-2 py-1.5 text-[9px] xl:text-[10px] tracking-[0.06em]"
+            : "px-3 py-1.5 text-[10px] xl:text-[11px] tracking-[0.1em]",
           pathname === "/customer/login"
             ? "bg-site-accent-hover"
             : "bg-site-accent hover:bg-site-accent-hover",

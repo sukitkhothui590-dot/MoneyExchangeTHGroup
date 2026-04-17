@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 type DailyAgg = { date: string; total_thb: number; count: number };
 type BranchAgg = { branch_id: string; total_thb: number; count: number };
+type VoidBranchAgg = { branch_id: string; count: number };
 type CurrencyAgg = { currency_code: string; total_thb: number; count: number };
 
 type KycAggRow = {
@@ -122,6 +123,34 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: txErr.message }, { status: 500 });
     }
 
+    let voidQ = supabase
+      .from("pos_transactions")
+      .select("branch_id")
+      .eq("status", "voided")
+      .limit(maxRows);
+
+    if (fromDate) {
+      voidQ = voidQ.gte("created_at", `${fromDate}T00:00:00.000Z`);
+    }
+    if (toDate) {
+      voidQ = voidQ.lte("created_at", `${toDate}T23:59:59.999Z`);
+    }
+
+    const { data: voidRows, error: voidErr } = await voidQ;
+
+    if (voidErr) {
+      return NextResponse.json({ error: voidErr.message }, { status: 500 });
+    }
+
+    const voidMap = new Map<string, number>();
+    for (const v of voidRows ?? []) {
+      const bid = v.branch_id;
+      voidMap.set(bid, (voidMap.get(bid) ?? 0) + 1);
+    }
+    const voidByBranch: VoidBranchAgg[] = [...voidMap.entries()]
+      .map(([branch_id, count]) => ({ branch_id, count }))
+      .sort((a, b) => b.count - a.count);
+
     const rows = (txRows ?? []).filter((r) => r.status === "active");
     const agg = aggFromTxns(
       rows.map((r) => ({
@@ -187,6 +216,8 @@ export async function GET(request: Request) {
         /** ใช้แทน mock “visit” — จำนวนธุรกรรมที่ใช้งานในช่วงที่ดึงมา */
         txnActiveCount: agg.txnCount,
         kycBreakdown,
+        /** รายการยกเลิก (void) ต่อสาขา — ช่วยดูความเสี่ยง/ปัญหาเชิงปฏิบัติการ */
+        voidByBranch,
       },
     });
   } catch {

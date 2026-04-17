@@ -21,6 +21,7 @@ import {
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
 import type { AdminTranslations } from "@/lib/admin/translations";
 import { fillTemplate } from "@/lib/admin/screenCopy";
+import { transactionDisplayReference } from "@/lib/book/bookingReference";
 
 function kycStatusShort(s: KycStatus, t: AdminTranslations): string {
   const km = t.screens.kycMock;
@@ -95,6 +96,7 @@ function AdminTransactionsMock() {
       if (!query) return matchB;
       const mem = memMap.get(row.member_id);
       const matchQ =
+        transactionDisplayReference(row).toLowerCase().includes(query) ||
         row.id.toLowerCase().includes(query) ||
         row.member_name.toLowerCase().includes(query) ||
         row.currency_code.toLowerCase().includes(query) ||
@@ -120,6 +122,7 @@ function AdminTransactionsMock() {
 
   const exportCsv = () => {
     const header = [
+      "txn_ref",
       "created_at",
       "id",
       "member_id",
@@ -136,6 +139,7 @@ function AdminTransactionsMock() {
     const lines = filtered.map((row) => {
       const mem = memberById.get(row.member_id);
       return [
+        transactionDisplayReference(row),
         row.created_at,
         row.id,
         row.member_id,
@@ -243,17 +247,20 @@ function AdminTransactionsMock() {
           <p className="text-sm text-muted">{sh.loading}</p>
         ) : (
           <div className="rounded-2xl border border-border/80 bg-white/95 overflow-hidden shadow-sm overflow-x-auto">
-            <table className="w-full text-sm min-w-[1200px]">
+            <table className="w-full text-sm min-w-[1320px]">
               <thead className="sticky top-0 z-10 shadow-sm">
                 <tr className="border-b border-border/80 bg-surface/50 backdrop-blur-sm text-left">
-                  <th className="px-3 sm:px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  <th className="px-3 sm:px-4 py-3 text-muted font-medium whitespace-nowrap min-w-[9.5rem]">
                     {s.colTime}
                   </th>
-                  <th className="px-3 sm:px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  <th className="px-3 sm:px-4 py-3 text-muted font-medium whitespace-nowrap min-w-[7rem]">
                     {s.colId}
                   </th>
-                  <th className="px-3 sm:px-4 py-3 text-muted font-medium">
-                    {s.colMember}
+                  <th className="px-3 sm:px-4 py-3 text-muted font-medium min-w-[8rem]">
+                    {s.colMemberName}
+                  </th>
+                  <th className="px-3 sm:px-4 py-3 text-muted font-medium min-w-[11rem]">
+                    {s.colMemberId}
                   </th>
                   <th className="px-3 sm:px-4 py-3 text-muted font-medium whitespace-nowrap">
                     {s.colKyc}
@@ -276,6 +283,9 @@ function AdminTransactionsMock() {
                   <th className="px-3 sm:px-4 py-3 text-muted font-medium">
                     {s.colStaff}
                   </th>
+                  <th className="px-3 sm:px-4 py-3 text-muted font-medium text-center whitespace-nowrap">
+                    {s.colStatus}
+                  </th>
                   <th className="px-3 sm:px-4 py-3 text-muted font-medium text-center w-[120px] whitespace-nowrap">
                     {s.colActions}
                   </th>
@@ -289,28 +299,40 @@ function AdminTransactionsMock() {
                       key={row.id}
                       className="border-b border-border last:border-0 transition-colors hover:bg-surface/90"
                     >
-                      <td className="px-3 sm:px-4 py-2.5 text-xs whitespace-nowrap align-top">
+                      <td className="px-3 sm:px-4 py-2.5 text-[11px] text-muted tabular-nums whitespace-nowrap align-top">
                         {new Date(row.created_at).toLocaleString(dateLocale, {
                           dateStyle: "short",
                           timeStyle: "short",
                         })}
                       </td>
-                      <td className="px-3 sm:px-4 py-2.5 font-mono text-xs align-top">
-                        {row.id}
+                      <td className="px-3 sm:px-4 py-2.5 align-top">
+                        <span
+                          className="inline-block font-mono text-xs font-semibold tracking-tight text-foreground"
+                          title={row.id}
+                        >
+                          {transactionDisplayReference(row)}
+                        </span>
                       </td>
-                      <td className="px-3 sm:px-4 py-2.5 align-top min-w-[140px]">
+                      <td className="px-3 sm:px-4 py-2.5 align-top">
                         <span className="font-medium text-foreground line-clamp-2">
                           {row.member_name}
                         </span>
-                        <span className="text-[10px] text-muted font-mono block mt-0.5">
-                          {row.member_id}
-                        </span>
-                        <Link
-                          href={`/admin/dashboard/customers?q=${encodeURIComponent(row.member_id)}`}
-                          className="text-[11px] text-brand hover:underline inline-block mt-1"
-                        >
-                          {s.linkIdentity}
-                        </Link>
+                      </td>
+                      <td className="px-3 sm:px-4 py-2.5 align-top max-w-[240px]">
+                        <div className="rounded-lg border border-border/70 bg-surface/50 px-2 py-1.5">
+                          <p
+                            className="font-mono text-[11px] text-foreground/90 break-all leading-snug"
+                            title={row.member_id}
+                          >
+                            {row.member_id}
+                          </p>
+                          <Link
+                            href={`/admin/dashboard/customers?q=${encodeURIComponent(row.member_id)}`}
+                            className="text-[11px] font-medium text-brand hover:underline inline-block mt-1.5"
+                          >
+                            {s.linkIdentity}
+                          </Link>
+                        </div>
                       </td>
                       <td className="px-3 sm:px-4 py-2.5 text-xs align-top">
                         {mem ? (
@@ -347,6 +369,11 @@ function AdminTransactionsMock() {
                         {row.staff_label}
                       </td>
                       <td className="px-3 sm:px-4 py-2.5 text-center align-top">
+                        <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
+                          {locale === "th" ? "ใช้งาน" : "Active"}
+                        </span>
+                      </td>
+                      <td className="px-3 sm:px-4 py-2.5 text-center align-top">
                         <button
                           type="button"
                           onClick={() => setDetailTxn(row)}
@@ -361,7 +388,7 @@ function AdminTransactionsMock() {
                 {filtered.length === 0 && (
                   <tr>
                     <td
-                      colSpan={11}
+                      colSpan={13}
                       className="px-4 py-12 text-center text-muted text-sm"
                     >
                       {sh.noRows}

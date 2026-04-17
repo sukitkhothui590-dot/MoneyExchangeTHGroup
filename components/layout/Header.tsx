@@ -79,7 +79,6 @@ function useNavLinks() {
       dropdownItems: [
         { href: "/spr-money-exchange", label: t.nav.sprExchange },
         { href: "/spr-money-transfer", label: t.nav.sprTransfer },
-        { href: "/vip-foreign-exchange-room", label: t.nav.vipRoom },
       ],
     },
     {
@@ -259,6 +258,7 @@ const langDropdownPanelClass =
 export default function Header() {
   const pathname = usePathname();
   const { locale, setLocale, t } = useLanguage();
+  const navCompact = locale === "en";
   const authUser = useAuthUser();
   const navLinks = useNavLinks();
   const leftNav = navLinks.slice(0, 3);
@@ -359,11 +359,16 @@ export default function Header() {
 
   const navClass = (active: boolean) =>
     [
-      "uppercase tracking-[0.12em] text-[11px] xl:text-xs font-semibold transition-colors duration-200 border-b-2 pb-0.5",
+      "uppercase font-semibold transition-colors duration-200 border-b-2 pb-0.5",
+      navCompact
+        ? "tracking-[0.06em] text-[10px] lg:text-[10px] xl:text-[11px]"
+        : "tracking-[0.12em] text-[11px] xl:text-xs",
       active
         ? "text-site-accent border-site-accent"
         : "text-surface-700 border-transparent hover:text-site-accent hover:border-site-accent/40",
     ].join(" ");
+
+  const navLinkPad = navCompact ? "px-1.5 lg:px-2 xl:px-2.5" : "px-2.5 xl:px-3";
 
   function renderDesktopLink(
     link: NavLinkItem,
@@ -381,7 +386,9 @@ export default function Header() {
         <Link
           key={link.key}
           href={link.href}
-          className="inline-flex items-center px-2.5 xl:px-3 py-2 min-h-[44px]"
+          className={["inline-flex items-center py-2 min-h-[44px] shrink-0", navLinkPad].join(
+            " ",
+          )}
         >
           <span className={navClass(isActive)}>{link.label}</span>
         </Link>
@@ -391,14 +398,15 @@ export default function Header() {
     return (
       <div
         key={link.key}
-        className="relative inline-flex items-center"
+        className="relative inline-flex shrink-0 items-center"
         onMouseEnter={() => setOpenDropdownKey(link.key)}
         onMouseLeave={() => setOpenDropdownKey(null)}
       >
         <button
           type="button"
           className={[
-            "flex items-center gap-1 px-2.5 xl:px-3 py-2 min-h-[44px] rounded-lg transition-colors duration-150",
+            "flex items-center gap-0.5 py-2 min-h-[44px] rounded-lg transition-colors duration-150",
+            navLinkPad,
             isOpen ? "bg-site-subtle/70 ring-1 ring-site-accent/20" : "hover:bg-surface-50/90",
           ].join(" ")}
           onClick={() => setOpenDropdownKey(isOpen ? null : link.key)}
@@ -691,9 +699,9 @@ export default function Header() {
             </div>
 
             {/* Desktop: one flex row so left | logo | right share the same vertical center */}
-            <div className="hidden lg:flex lg:h-[60px] lg:min-h-0 lg:items-center lg:justify-between lg:gap-4 xl:gap-8 lg:py-0 overflow-visible">
+            <div className="hidden lg:flex lg:h-[60px] lg:min-h-0 lg:items-center lg:justify-between lg:gap-2 xl:gap-6 2xl:gap-8 lg:py-0 overflow-visible">
               <nav
-                className="flex flex-1 min-w-0 flex-wrap items-center justify-end gap-0.5"
+                className="flex flex-1 min-w-0 flex-nowrap items-center justify-end gap-0 overflow-x-auto overflow-y-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 aria-label={t.aria.mainNav}
               >
                 {leftNav.map((link) => renderDesktopLink(link, "left"))}
@@ -702,17 +710,20 @@ export default function Header() {
               <Link
                 href="/"
                 aria-label={t.aria.backHome}
-                className="relative z-10 flex shrink-0 items-center justify-center overflow-visible min-w-[120px] max-w-[220px] lg:h-[60px]"
+                className="relative z-10 flex shrink-0 items-center justify-center overflow-visible min-w-[100px] max-w-[200px] xl:min-w-[120px] xl:max-w-[220px] lg:h-[60px]"
               >
                 <NavbarLogoMark priority />
               </Link>
 
-              <div className="flex flex-1 min-w-0 flex-wrap items-center justify-start gap-2 xl:gap-3">
-                <nav className="flex flex-wrap items-center justify-start gap-0.5">
+              <div className="flex flex-1 min-w-0 flex-nowrap items-center justify-start gap-1 xl:gap-2 overflow-x-auto overflow-y-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <nav className="flex min-w-0 flex-nowrap items-center justify-start gap-0">
                   {rightNav.map((link) => renderDesktopLink(link, "right"))}
                 </nav>
-                <div aria-label={t.aria.accountNav}>
-                  <HeaderAccountButtons user={authUser} />
+                <div
+                  className="shrink-0"
+                  aria-label={t.aria.accountNav}
+                >
+                  <HeaderAccountButtons user={authUser} compact={navCompact} />
                 </div>
               </div>
             </div>

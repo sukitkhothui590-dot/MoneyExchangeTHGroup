@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  BanknotesIcon,
-  DevicePhoneMobileIcon,
-  MagnifyingGlassIcon,
-  UserPlusIcon,
-} from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, UserPlusIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -277,12 +272,9 @@ function PosExchangeInner() {
             </p>
           </div>
           <div className="flex flex-col sm:items-end gap-2 shrink-0">
-            <div className="flex items-center gap-2 text-xs text-white/70">
-              <BanknotesIcon className="h-8 w-8 text-blue-300/90" />
-              <span className="max-w-[220px] leading-snug">
-                ค้นหาสมาชิก หรือเปิดแท็บ Walk-in เพื่อสร้าง/โหลดลูกค้า
-              </span>
-            </div>
+            <p className="text-xs text-white/70 max-w-[220px] leading-snug text-right sm:text-left">
+              ค้นหาสมาชิก หรือเปิดแท็บ Walk-in เพื่อสร้าง/โหลดลูกค้า
+            </p>
             <Link
               href="/pos/identity"
               className="text-xs font-medium text-blue-200/95 hover:text-white underline underline-offset-2"
@@ -443,8 +435,7 @@ function PosExchangeInner() {
                   </p>
                   <div className="space-y-2">
                     <div>
-                      <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 mb-1">
-                        <DevicePhoneMobileIcon className="h-5 w-5 text-slate-400" />
+                      <label className="block text-xs font-medium text-slate-600 mb-1">
                         ประเทศ / รหัสโทร
                       </label>
                       <select
@@ -533,14 +524,11 @@ function PosExchangeInner() {
         </div>
 
         <section className="xl:col-span-2 pos-card-saas rounded-2xl p-4 sm:p-5 space-y-4">
-          <div className="flex items-center gap-2 pb-1 border-b border-blue-100/80">
-            <BanknotesIcon className="h-6 w-6 text-blue-700" />
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900">รายการแลก</h2>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                เลือกสกุลเงิน จำนวน และยืนยันก่อนบันทึก
-              </p>
-            </div>
+          <div className="border-l-4 border-blue-500 pl-3 pb-1 border-b border-blue-100/80">
+            <h2 className="text-sm font-semibold text-slate-900">รายการแลก</h2>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              เลือกสกุลเงิน จำนวน และยืนยันก่อนบันทึก
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

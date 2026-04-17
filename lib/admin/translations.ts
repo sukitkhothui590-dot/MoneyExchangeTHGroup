@@ -166,6 +166,7 @@ export const adminTh = {
           items: [
             "มิตริกสรุปยอดธุรกรรม ยอดเงิน visit สมาชิก และค่าเฉลี่ยต่อรายการ",
             "กราฟและตารางแยกตามวัน สาขา สกุลเงิน และสถานะ KYC ของสมาชิก",
+            "ตารางสาขาแสดงจำนวนรายการที่ยกเลิก (void) — ด้านล่างมีบันทึกปัญหาต่อสาขา (แสดงผู้บันทึก)",
           ],
         },
       ],
@@ -175,13 +176,17 @@ export const adminTh = {
       subtitleLoading: "กำลังโหลด...",
       title: "อัตราแลกเปลี่ยน",
       subtitle: "จัดการอัตราซื้อ-ขายและมาร์จิ้นของสกุลเงิน",
+      dailyLockTitle: "ล็อกเรทรายวัน",
+      dailyLockHint:
+        "เปิด = การรีเฟรชใช้แคชของวันนี้ (ไม่เรียก API ซ้ำในวันเดียวกัน) · ปิด = ทุกครั้งที่รีเฟรชจะดึงเรทจาก API จริง",
       helpTitle: "ระบบหน้านี้ทำงานอย่างไร",
       helpSections: [
         {
           title: "แถบด้านบน (ปุ่มใน Header)",
           items: [
+            "ล็อกเรทรายวัน — สลับเปิด/ปิดได้: เปิดแล้วการกดรีเฟรชจะใช้แคชตามวันที่ไทย (ประหยัดการเรียก API); ปิดแล้วการรีเฟรชจะบังคับดึงเรทจาก Frankfurter ทุกครั้ง (เทียบเท่าใช้ปุ่มดึงเรทใหม่ในส่วนอ้างอิง)",
             "ดึงเรทใหม่ — บังคับดึงอัตราอ้างอิงล่าสุดจาก Frankfurter (ฐาน THB) และซิงก์เพิ่มสกุลเงินที่ยังไม่มีในตาราง (เฉพาะแอดมิน) ใช้เมื่อต้องการเรทจากแหล่งจริงทันที แม้ในวันนั้นจะมีแคชแล้ว",
-            "รีเฟรช — โหลดข้อมูลจากเซิร์ฟเวอร์และรีเฟรชตารางด้านล่าง ระบบเก็บแคชอัตรา「ตามวัน」ตามวันที่ในเขตเวลาไทย ถ้าวันนี้ดึงไปแล้ว การกดรีเฟรชจะใช้แคชวันนั้น ไม่เรียก Frankfurter ซ้ำ — ถ้าต้องการดึงชุดเรทใหม่จาก API จริง ให้ใช้ปุ่มดึงเรทใหม่",
+            "รีเฟรช — โหลดข้อมูลจากเซิร์ฟเวอร์และรีเฟรชตารางด้านล่าง เมื่อล็อกเรทรายวันเปิดอยู่ ระบบเก็บแคชอัตราตามวันที่ในเขตเวลาไทย — ปิดล็อกแล้วกดรีเฟรชจะดึงจาก API ทุกครั้ง",
             "ตั้งมาร์จิ้นรวม — เปิดหน้าต่างตั้งมาร์จิ้นซื้อ/ขายให้ทุกสกุลในหน้าที่เลือกพร้อมกัน (ค่ากลางหรือสาขา) ระบบคำนวณราคาให้ตามมาร์จิ้นรวม",
             "เพิ่มสกุลเงิน — แสดงเมื่อเลือกค่ากลางเท่านั้น ใช้เพิ่มสกุลใหม่ในตารางหลัก",
           ],
@@ -529,6 +534,7 @@ export const adminEn = {
           items: [
             "Metric tiles for volume, THB totals, visits, members, and averages.",
             "Charts and tables by day, branch, currency, and member KYC status.",
+            "Branch table includes voided transaction counts; below that, per-branch issue log with who recorded each entry.",
           ],
         },
       ],
@@ -538,13 +544,17 @@ export const adminEn = {
       subtitleLoading: "Loading...",
       title: "Exchange rates",
       subtitle: "Manage buy/sell rates and currency margins",
+      dailyLockTitle: "Daily rate lock",
+      dailyLockHint:
+        "On = refresh uses today’s cached rates (one Frankfurter fetch per day). Off = every refresh forces a live API fetch.",
       helpTitle: "How this page works",
       helpSections: [
         {
           title: "Top bar (Header actions)",
           items: [
+            "Daily rate lock — Toggle on or off: when on, Refresh reuses today’s Thailand-date cache; when off, each Refresh forces Frankfurter (like Pull new rates for reference data).",
             "Pull new rates — Forces the latest reference rates from Frankfurter (THB base) and syncs any currencies missing from the table (admin only). Use when you need a fresh fetch from the API even if today’s cache already exists.",
-            "Refresh — Reloads data from the server and refreshes the table below. Rates are cached per calendar day in Thailand time; if today’s row was already fetched, Refresh reuses that daily cache and does not call Frankfurter again — use Pull new rates to hit the live API.",
+            "Refresh — Reloads data from the server and refreshes the table below. With daily lock on, rates are cached per calendar day in Thailand time; with daily lock off, each refresh hits the live API.",
             "Apply global margin — Opens the dialog to set buy/sell margins for every currency at once on the current view (global or branch); rates are recalculated from those margins.",
             "Add currency — Shown only when “Global” is selected; adds a new currency to the master list.",
           ],

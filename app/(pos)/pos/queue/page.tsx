@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePosSession } from "@/lib/context/PosSessionContext";
 import type { Booking, BookingStatus } from "@/lib/types/database";
+import { bookingDisplayReference } from "@/lib/book/bookingReference";
 import PosBookingDetailModal from "@/components/pos/PosBookingDetailModal";
 
 const statusTh: Record<BookingStatus, string> = {
@@ -329,15 +330,9 @@ export default function PosQueuePage() {
             >
               <div className="flex justify-between gap-2 flex-wrap items-start">
                 <div className="min-w-0 flex-1">
-                  {b.confirmation_code ? (
-                    <p className="font-mono text-sm font-bold text-emerald-700 tracking-tight">
-                      {b.confirmation_code}
-                    </p>
-                  ) : (
-                    <span className="font-mono text-xs break-all text-slate-400">
-                      {b.id.slice(0, 8)}…
-                    </span>
-                  )}
+                  <p className="font-mono text-sm font-bold text-emerald-700 tracking-tight">
+                    {bookingDisplayReference(b)}
+                  </p>
                 </div>
                 <span
                   className={`text-xs font-medium px-2 py-0.5 rounded-full border flex-shrink-0 ${statusClass[b.status]}`}

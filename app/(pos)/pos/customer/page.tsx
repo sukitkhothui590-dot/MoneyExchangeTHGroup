@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserGroupIcon } from "@heroicons/react/24/outline";
 import { usePosSession } from "@/lib/context/PosSessionContext";
 import type { Member } from "@/lib/types/database";
 
@@ -98,8 +97,7 @@ export default function PosCustomerDirectoryPage() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-200/90">
               POS · ผู้ดูแลระบบ
             </p>
-            <h1 className="mt-1 flex items-center gap-2 text-xl font-semibold tracking-tight sm:text-2xl">
-              <UserGroupIcon className="h-7 w-7 shrink-0 opacity-90" />
+            <h1 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">
               ค้นหาลูกค้า
             </h1>
             <p className="mt-2 max-w-xl text-sm text-blue-100/90">

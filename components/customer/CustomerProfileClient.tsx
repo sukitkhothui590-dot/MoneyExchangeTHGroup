@@ -13,6 +13,7 @@ import {
 import { customerBookingToBooking } from "@/lib/mock/bookingAdapter";
 import type { MockTxn } from "@/lib/mock/store";
 import type { Booking } from "@/lib/types/database";
+import { bookingDisplayReference } from "@/lib/book/bookingReference";
 import { USE_MOCK_DATA } from "@/lib/config";
 import { useLanguage } from "@/lib/i18n";
 import { formatDateTime, type Locale } from "@/lib/api";
@@ -324,11 +325,10 @@ export default function CustomerProfileClient() {
               >
                 <div className="flex justify-between gap-2">
                   <span className="font-medium">
-                    {b.confirmation_code ? (
-                      <span className="block text-xs font-mono text-site-accent mb-1">
-                        {p.bookConfirmationCode}: {b.confirmation_code}
-                      </span>
-                    ) : null}
+                    <span className="block text-xs font-mono text-site-accent mb-1">
+                      {p.bookConfirmationCode}:{" "}
+                      {bookingDisplayReference(b)}
+                    </span>
                     {b.currency_code} {b.amount?.toLocaleString()} →{" "}
                     {b.total_thb?.toLocaleString()} THB
                   </span>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import QRCode from "react-qr-code";
 import { XMarkIcon, ClipboardDocumentIcon } from "@heroicons/react/24/outline";
 import type { Booking, BookingStatus } from "@/lib/types/database";
+import { bookingDisplayReference } from "@/lib/book/bookingReference";
 
 const statusTh: Record<BookingStatus, string> = {
   pending_payment: "รอชำระเงิน",
@@ -48,10 +49,7 @@ export default function PosBookingDetailModal({
   const [statusSaving, setStatusSaving] = useState(false);
   const [statusError, setStatusError] = useState("");
 
-  const refCode =
-    booking?.confirmation_code?.trim() ||
-    booking?.id ||
-    "";
+  const refCode = booking ? bookingDisplayReference(booking) : "";
 
   const copyRef = useCallback(async () => {
     if (!refCode) return;
@@ -152,13 +150,11 @@ export default function PosBookingDetailModal({
 
           <div className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5">
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
-              {booking.confirmation_code?.trim()
-                ? "รหัสยืนยัน (แสดงให้พนักงาน)"
-                : "รหัสใน QR (ใช้ UUID ถ้ายังไม่มีรหัสสั้น)"}
+              รหัสอ้างอิงการจอง
             </p>
             <div className="flex items-start justify-between gap-2 mt-1">
               <p className="font-mono text-lg font-bold text-emerald-700 break-all leading-tight">
-                {booking.confirmation_code?.trim() || refCode}
+                {refCode}
               </p>
               <button
                 type="button"
@@ -172,7 +168,7 @@ export default function PosBookingDetailModal({
           </div>
 
           <div>
-            <p className="text-[10px] text-slate-500 mb-0.5">รหัสการจอง (UUID)</p>
+            <p className="text-[10px] text-slate-500 mb-0.5">รหัสระบบ (ฐานข้อมูล)</p>
             <p className="font-mono text-xs text-slate-600 break-all">{booking.id}</p>
           </div>
 

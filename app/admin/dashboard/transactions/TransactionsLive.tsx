@@ -18,6 +18,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useAdminLanguage } from "@/lib/admin/AdminLanguageProvider";
 import type { AdminTranslations } from "@/lib/admin/translations";
+import { transactionDisplayReference } from "@/lib/book/bookingReference";
 
 function mapLiveToMockTxn(
   r: AdminPosTransactionRow,
@@ -135,6 +136,7 @@ export function AdminTransactionsLive() {
 
   const exportCsv = () => {
     const header = [
+      "txn_ref",
       "created_at",
       "id",
       "status",
@@ -150,6 +152,7 @@ export function AdminTransactionsLive() {
     ];
     const lines = rows.map((row) =>
       [
+        transactionDisplayReference(row),
         row.created_at,
         row.id,
         row.status,
@@ -263,20 +266,20 @@ export function AdminTransactionsLive() {
           <p className="text-sm text-muted">{sh.loading}</p>
         ) : (
           <div className="overflow-hidden overflow-x-auto rounded-2xl border border-border/80 bg-white/95 shadow-sm">
-            <table className="w-full min-w-[1280px] text-sm">
+            <table className="w-full min-w-[1360px] text-sm">
               <thead className="sticky top-0 z-10 shadow-sm">
                 <tr className="border-b border-border/80 bg-surface/50 text-left backdrop-blur-sm">
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-muted sm:px-4">
-                    {locale === "th" ? "สถานะ" : "Status"}
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-muted sm:px-4">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-muted sm:px-4 min-w-[9.5rem]">
                     {s.colTime}
                   </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-muted sm:px-4">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-muted sm:px-4 min-w-[10.5rem]">
                     {s.colId}
                   </th>
-                  <th className="px-3 py-3 font-medium text-muted sm:px-4">
-                    {s.colMember}
+                  <th className="px-3 py-3 font-medium text-muted sm:px-4 min-w-[8rem]">
+                    {s.colMemberName}
+                  </th>
+                  <th className="px-3 py-3 font-medium text-muted sm:px-4 min-w-[11rem]">
+                    {s.colMemberId}
                   </th>
                   <th className="whitespace-nowrap px-3 py-3 font-medium text-muted sm:px-4">
                     {s.colKyc}
@@ -299,6 +302,9 @@ export function AdminTransactionsLive() {
                   <th className="px-3 py-3 font-medium text-muted sm:px-4">
                     {s.colStaff}
                   </th>
+                  <th className="whitespace-nowrap px-3 py-3 text-center font-medium text-muted sm:px-4">
+                    {s.colStatus}
+                  </th>
                   <th className="w-[120px] whitespace-nowrap px-3 py-3 text-center font-medium text-muted sm:px-4">
                     {s.colActions}
                   </th>
@@ -312,39 +318,40 @@ export function AdminTransactionsLive() {
                       row.status === "voided" ? "bg-red-50/40" : ""
                     }`}
                   >
-                    <td className="px-3 py-2.5 align-top text-xs sm:px-4">
-                      {row.status === "voided" ? (
-                        <span className="font-medium text-red-700">
-                          {locale === "th" ? "ยกเลิก" : "Voided"}
-                        </span>
-                      ) : (
-                        <span className="font-medium text-emerald-700">
-                          {locale === "th" ? "ใช้งาน" : "Active"}
-                        </span>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 align-top text-xs sm:px-4">
+                    <td className="whitespace-nowrap px-3 py-2.5 align-top text-[11px] text-muted tabular-nums sm:px-4">
                       {new Date(row.created_at).toLocaleString(dateLocale, {
                         dateStyle: "short",
                         timeStyle: "short",
                       })}
                     </td>
-                    <td className="px-3 py-2.5 align-top font-mono text-xs sm:px-4">
-                      {row.id}
+                    <td className="px-3 py-2.5 align-top sm:px-4">
+                      <span
+                        className="inline-block font-mono text-xs font-semibold tracking-tight text-foreground"
+                        title={row.id}
+                      >
+                        {transactionDisplayReference(row)}
+                      </span>
                     </td>
-                    <td className="min-w-[140px] px-3 py-2.5 align-top sm:px-4">
+                    <td className="px-3 py-2.5 align-top sm:px-4">
                       <span className="line-clamp-2 font-medium text-foreground">
                         {row.member_name}
                       </span>
-                      <span className="mt-0.5 block font-mono text-[10px] text-muted">
-                        {row.member_id}
-                      </span>
-                      <Link
-                        href={`/admin/dashboard/customers?q=${encodeURIComponent(row.member_id)}`}
-                        className="mt-1 inline-block text-[11px] text-brand hover:underline"
-                      >
-                        {s.linkIdentity}
-                      </Link>
+                    </td>
+                    <td className="max-w-[240px] px-3 py-2.5 align-top sm:px-4">
+                      <div className="rounded-lg border border-border/70 bg-surface/50 px-2 py-1.5">
+                        <p
+                          className="font-mono text-[11px] text-foreground/90 break-all leading-snug"
+                          title={row.member_id}
+                        >
+                          {row.member_id}
+                        </p>
+                        <Link
+                          href={`/admin/dashboard/customers?q=${encodeURIComponent(row.member_id)}`}
+                          className="mt-1.5 inline-block text-[11px] font-medium text-brand hover:underline"
+                        >
+                          {s.linkIdentity}
+                        </Link>
+                      </div>
                     </td>
                     <td className="px-3 py-2.5 align-top text-xs sm:px-4">
                       <span className="text-[11px] leading-tight text-muted">
@@ -372,6 +379,17 @@ export function AdminTransactionsLive() {
                       {row.staff_display_name}
                     </td>
                     <td className="px-3 py-2.5 text-center align-top sm:px-4">
+                      {row.status === "voided" ? (
+                        <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-800">
+                          {locale === "th" ? "ยกเลิก" : "Voided"}
+                        </span>
+                      ) : (
+                        <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
+                          {locale === "th" ? "ใช้งาน" : "Active"}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 text-center align-top sm:px-4">
                       <button
                         type="button"
                         onClick={() => setDetail(row)}
@@ -385,7 +403,7 @@ export function AdminTransactionsLive() {
                 {rows.length === 0 && (
                   <tr>
                     <td
-                      colSpan={12}
+                      colSpan={13}
                       className="px-4 py-12 text-center text-sm text-muted"
                     >
                       {sh.noRows}

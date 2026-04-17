@@ -19,16 +19,6 @@ const mockServices: ServiceItem[] = [
     image: "/all-service/2.png",
     link: "/spr-money-transfer",
   },
-  {
-    id: "3",
-    title: "Private VIP Foreign Exchange Room",
-    titleTh: "บริการห้องวีไอพีแลกเงินตราต่างประเทศ",
-    description:
-      "บริการแลกเงินแบบส่วนตัวสำหรับลูกค้าที่จองเรทและจำนวนเงินล่วงหน้า สะดวก รวดเร็ว และเป็นส่วนตัว",
-    icon: "",
-    image: "/all-service/3.png",
-    link: "/vip-foreign-exchange-room",
-  },
 ];
 
 export async function getServices(): Promise<ServiceItem[]> {
